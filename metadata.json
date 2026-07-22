@@ -1,0 +1,6 @@
+{
+  "name": "Product Price Tracker Agent",
+  "description": "Automated price monitoring agent that extracts prices from product links, syncs values with Google Sheets, and sends price drop email notifications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
