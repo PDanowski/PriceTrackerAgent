@@ -279,6 +279,7 @@ export default function App() {
           updatedProducts[i] = {
             ...prod,
             title: scraped.title || prod.title,
+            url: scraped.url || prod.url,
             imageUrl: scraped.imageUrl || prod.imageUrl,
             previousPrice: prod.currentPrice,
             currentPrice: newPrice,
@@ -341,6 +342,7 @@ export default function App() {
             return {
               ...p,
               title: scraped.title || p.title,
+              url: scraped.url || p.url,
               imageUrl: scraped.imageUrl || p.imageUrl,
               previousPrice: p.currentPrice !== newPrice ? p.currentPrice : p.previousPrice,
               currentPrice: newPrice,
@@ -368,6 +370,26 @@ export default function App() {
     } finally {
       setCheckingProductId(null);
     }
+  };
+
+  // Handle updating a product's price manually
+  const handleUpdatePrice = (id: string, newPrice: number) => {
+    const updated = products.map((p) => {
+      if (p.id === id) {
+        const newHistory = recordDailyLowestPrice(p.priceHistory || [], newPrice);
+        return {
+          ...p,
+          previousPrice: p.currentPrice !== newPrice ? p.currentPrice : p.previousPrice,
+          currentPrice: newPrice,
+          lowestPrice: Math.min(p.lowestPrice, newPrice),
+          lastChecked: new Date().toISOString(),
+          priceHistory: newHistory,
+        } as Product;
+      }
+      return p;
+    });
+    setProducts(updated);
+    addLog('info', `Ręcznie zaktualizowano cenę produktu do ${newPrice.toFixed(2)} PLN`);
   };
 
   // Create Google Sheet
@@ -720,6 +742,7 @@ export default function App() {
                 onDeleteProduct={handleDeleteProduct}
                 onOpenHistoryChart={(p) => setHistoryModalProduct(p)}
                 onUpdateColorBadge={handleUpdateColorBadge}
+                onUpdatePrice={handleUpdatePrice}
                 isChecking={checkingProductId === product.id}
               />
             ))}

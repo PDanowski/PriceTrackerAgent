@@ -21,6 +21,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const [selectedColorBadge, setSelectedColorBadge] = useState<ColorBadgeOption | undefined>('blue');
   const [inStock, setInStock] = useState(true);
   const [hasScraped, setHasScraped] = useState(false);
+  const [scrapeNotice, setScrapeNotice] = useState('');
 
   if (!isOpen) return null;
 
@@ -46,11 +47,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       }
 
       const data = await response.json();
+      if (data.url) setUrl(data.url);
       setTitle(data.title || '');
       setPrice(data.price ? data.price.toString() : '199.00');
       setCurrency(data.currency || 'zł');
       setImageUrl(data.imageUrl || '');
       setInStock(data.inStock !== false);
+      setScrapeNotice(data.scrapeWarning || '');
 
       setHasScraped(true);
     } catch (err: any) {
@@ -145,10 +148,19 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
 
           {/* Scraped details preview form */}
           <div className="space-y-3 pt-2 border-t border-slate-100">
-            {hasScraped && (
+            {hasScraped && !scrapeNotice && (
               <div className="bg-emerald-50 border border-emerald-200/80 rounded-xl p-3 flex items-center space-x-2 text-xs text-emerald-800">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                 <span>Pobrano dane z linku! Możesz zweryfikować wartości poniżej.</span>
+              </div>
+            )}
+
+            {scrapeNotice && (
+              <div className="bg-amber-50 border border-amber-200/90 rounded-xl p-3 text-xs text-amber-900 leading-relaxed">
+                <div className="font-semibold text-amber-900 mb-0.5 flex items-center space-x-1">
+                  <span>Ochrona Anty-Bot Sklepu (np. Allegro)</span>
+                </div>
+                <span>{scrapeNotice}</span>
               </div>
             )}
 

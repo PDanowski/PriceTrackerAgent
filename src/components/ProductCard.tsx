@@ -9,6 +9,8 @@ import {
   Trash2,
   Palette,
   Check,
+  Edit2,
+  X,
 } from 'lucide-react';
 
 interface ProductCardProps {
@@ -17,6 +19,7 @@ interface ProductCardProps {
   onDeleteProduct: (id: string) => void;
   onOpenHistoryChart: (product: Product) => void;
   onUpdateColorBadge?: (id: string, color: ColorBadgeOption | undefined) => void;
+  onUpdatePrice?: (id: string, newPrice: number) => void;
   isChecking: boolean;
 }
 
@@ -26,9 +29,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onDeleteProduct,
   onOpenHistoryChart,
   onUpdateColorBadge,
+  onUpdatePrice,
   isChecking,
 }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [editedPriceInput, setEditedPriceInput] = useState(product.currentPrice.toString());
   const pickerRef = useRef<HTMLDivElement>(null);
 
   const activeBadge = COLOR_BADGES.find((b) => b.id === product.colorBadge);
@@ -178,32 +184,76 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <ExternalLink className="w-3 h-3 flex-shrink-0" />
             </a>
 
-            {/* Price display */}
-            <div className="flex items-baseline space-x-2 flex-wrap">
-              <span className="text-2xl font-black text-slate-900 tracking-tight">
-                {formatPrice(product.currentPrice, product.currency)}
-              </span>
-
-              {product.previousPrice !== null && product.previousPrice !== product.currentPrice && (
-                <span className="text-xs text-slate-400 line-through font-medium">
-                  {formatPrice(product.previousPrice, product.currency)}
+            {/* Price display & manual edit */}
+            {isEditingPrice ? (
+              <div className="flex items-center space-x-1.5 my-1 bg-amber-50 p-1.5 rounded-xl border border-amber-200">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editedPriceInput}
+                  onChange={(e) => setEditedPriceInput(e.target.value)}
+                  className="w-24 bg-white border border-amber-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-xs font-bold text-slate-600">{product.currency}</span>
+                <button
+                  onClick={() => {
+                    const parsed = parseFloat(editedPriceInput);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                      onUpdatePrice?.(product.id, parsed);
+                    }
+                    setIsEditingPrice(false);
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white p-1 rounded-lg text-xs font-semibold"
+                  title="Zapisz cenę"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setIsEditingPrice(false)}
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-600 p-1 rounded-lg text-xs"
+                  title="Anuluj"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-baseline space-x-2 flex-wrap">
+                <span className="text-2xl font-black text-slate-900 tracking-tight">
+                  {formatPrice(product.currentPrice, product.currency)}
                 </span>
-              )}
 
-              {hasPriceDrop && (
-                <span className="inline-flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                  <TrendingDown className="w-3.5 h-3.5 mr-0.5" />
-                  -{priceDiffPercent}%
-                </span>
-              )}
+                <button
+                  onClick={() => {
+                    setEditedPriceInput(product.currentPrice.toString());
+                    setIsEditingPrice(true);
+                  }}
+                  className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 rounded transition-colors"
+                  title="Edytuj cenę ręcznie"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
 
-              {!hasPriceDrop && product.previousPrice !== null && product.currentPrice > product.previousPrice && (
-                <span className="inline-flex items-center text-xs font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">
-                  <TrendingUp className="w-3.5 h-3.5 mr-0.5" />
-                  +{priceDiffPercent}%
-                </span>
-              )}
-            </div>
+                {product.previousPrice !== null && product.previousPrice !== product.currentPrice && (
+                  <span className="text-xs text-slate-400 line-through font-medium">
+                    {formatPrice(product.previousPrice, product.currency)}
+                  </span>
+                )}
+
+                {hasPriceDrop && (
+                  <span className="inline-flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                    <TrendingDown className="w-3.5 h-3.5 mr-0.5" />
+                    -{priceDiffPercent}%
+                  </span>
+                )}
+
+                {!hasPriceDrop && product.previousPrice !== null && product.currentPrice > product.previousPrice && (
+                  <span className="inline-flex items-center text-xs font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">
+                    <TrendingUp className="w-3.5 h-3.5 mr-0.5" />
+                    +{priceDiffPercent}%
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
