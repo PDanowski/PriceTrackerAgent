@@ -18,8 +18,29 @@ provider.addScope('https://www.googleapis.com/auth/spreadsheets');
 provider.addScope('https://www.googleapis.com/auth/gmail.send');
 provider.addScope('https://www.googleapis.com/auth/drive.file');
 
+const TOKEN_KEY = 'google_access_token';
+
 let isSigningIn = false;
-let cachedAccessToken: string | null = null;
+let cachedAccessToken: string | null = ((): string | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+})();
+
+const saveToken = (token: string | null) => {
+  cachedAccessToken = token;
+  try {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch (err) {
+    console.error('Failed to save access token:', err);
+  }
+};
 
 export const initAuth = (
   onAuthSuccess?: (user: User, token: string) => void,
@@ -27,14 +48,10 @@ export const initAuth = (
 ) => {
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
-      if (cachedAccessToken) {
-        if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
-      } else if (!isSigningIn) {
-        cachedAccessToken = null;
-        if (onAuthFailure) onAuthFailure();
-      }
+      const token = cachedAccessToken || localStorage.getItem(TOKEN_KEY) || '';
+      if (onAuthSuccess) onAuthSuccess(user, token);
     } else {
-      cachedAccessToken = null;
+      saveToken(null);
       if (onAuthFailure) onAuthFailure();
     }
   });
@@ -49,8 +66,8 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
       throw new Error('Failed to get access token from Google Auth credential');
     }
 
-    cachedAccessToken = credential.accessToken;
-    return { user: result.user, accessToken: cachedAccessToken };
+    saveToken(credential.accessToken);
+    return { user: result.user, accessToken: credential.accessToken };
   } catch (error: any) {
     console.error('Sign in error:', error);
     throw error;
@@ -60,10 +77,15 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 };
 
 export const getAccessToken = async (): Promise<string | null> => {
-  return cachedAccessToken;
+  if (cachedAccessToken) return cachedAccessToken;
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 };
 
 export const logout = async () => {
   await signOut(auth);
-  cachedAccessToken = null;
+  saveToken(null);
 };

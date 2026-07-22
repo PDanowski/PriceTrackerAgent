@@ -5,8 +5,16 @@ import * as cheerio from 'cheerio';
 import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Resolve directory safely across ESM (dev) and CJS (production bundle)
+const getDirname = () => {
+  if (typeof __dirname !== 'undefined') return __dirname;
+  try {
+    return path.dirname(fileURLToPath(import.meta.url));
+  } catch {
+    return process.cwd();
+  }
+};
+const appDir = getDirname();
 
 const app = express();
 app.use(express.json());
