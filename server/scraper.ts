@@ -441,6 +441,29 @@ export async function scrapeProductDetails(url: string) {
         }
       }
     }
+
+    if (parsedUrl.hostname.includes('ceneo.pl')) {
+      if (!scrapedPrice || scrapedPrice === 0) {
+        const dataPrice = $clean('.product-offer-summary__price [data-price], .price-format [data-price], [data-price]').first().attr('data-price');
+        if (dataPrice) {
+          const p = parseFloat(dataPrice);
+          if (!isNaN(p) && p > 0) scrapedPrice = p;
+        }
+      }
+      if (!scrapedPrice || scrapedPrice === 0) {
+        const valTxt = $clean('.price-format .value, .product-offer-summary__price .value').first().text().trim();
+        const pennyTxt = $clean('.price-format .penny, .product-offer-summary__price .penny').first().text().trim();
+        if (valTxt) {
+          const raw = valTxt.replace(/\s+/g, '') + (pennyTxt ? '.' + pennyTxt.replace(',', '') : '');
+          const p = parseFloat(raw.replace(',', '.'));
+          if (!isNaN(p) && p > 0) scrapedPrice = p;
+        }
+      }
+      if (!scrapedTitle || scrapedTitle.includes('Ceneo') || scrapedTitle === 'ceneo.pl') {
+        const ogTitle = $clean('meta[property="og:title"]').attr('content') || $clean('h1.product-top__title, h1').first().text().trim();
+        if (ogTitle) scrapedTitle = ogTitle.replace(/\s*-\s*Ceneo.*$/i, '').trim();
+      }
+    }
   }
 
   // 4. Gemini AI Fallback if price or currency missing or fetch blocked
@@ -525,9 +548,9 @@ Return ONLY valid JSON.`;
   let overrodeUrlToCeneo = false;
 
   const needsPriceFallback = !scrapedPrice || scrapedPrice === 0;
-  const shouldTryCeneoFallback = isCeneoUrl || (needsPriceFallback && (isAllegroUrl || isAmazonUrl || isBotBlocked || true));
 
-  if (shouldTryCeneoFallback && (needsPriceFallback || isCeneoUrl)) {
+  // ONLY attempt searchCeneoFallback if we don't have a valid scraped price yet!
+  if (needsPriceFallback && (isAllegroUrl || isAmazonUrl || isBotBlocked || !isCeneoUrl)) {
     let ceneoResult = await searchCeneoFallback(scrapedTitle);
 
     if (!ceneoResult || !ceneoResult.price || ceneoResult.price === 0) {
@@ -553,9 +576,11 @@ Return ONLY valid JSON.`;
         }
       }
 
-      if (ceneoResult.ceneoUrl && isAllegroUrl) {
+      if (ceneoResult.ceneoUrl) {
         finalTrackedUrl = ceneoResult.ceneoUrl;
-        overrodeUrlToCeneo = true;
+        if (isAllegroUrl || isAmazonUrl) {
+          overrodeUrlToCeneo = true;
+        }
       }
     }
   }
@@ -564,7 +589,7 @@ Return ONLY valid JSON.`;
 
   let scrapeWarning: string | undefined;
   if (overrodeUrlToCeneo) {
-    scrapeWarning = `Serwis Allegro stosuje ochronę anty-bot. Cenę (${scrapedPrice.toFixed(2)} zł) oraz adres do śledzenia przełączono na porównywarkę Ceneo (${finalTrackedUrl}).`;
+    scrapeWarning = `Serwis ${isAllegroUrl ? 'Allegro' : 'sklepu'} stosuje ochronę anty-bot. Cenę (${scrapedPrice.toFixed(2)} zł) oraz adres do śledzenia przełączono na porównywarkę Ceneo (${finalTrackedUrl}).`;
   } else if (fetchedFromCeneo && !isCeneoUrl) {
     scrapeWarning = `Nie udało się bezpośrednio odczytać ceny ze strony sklepu. Pobrano cenę (${scrapedPrice.toFixed(2)} ${scrapedCurrency || 'zł'}) z porównywarki Ceneo dla "${scrapedTitle}".`;
   } else if (needsManualPrice) {

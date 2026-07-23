@@ -1,10 +1,15 @@
 import * as cheerio from 'cheerio';
 
+const ACCESSORY_WORDS = ['etui', 'case', 'pokrowiec', 'szkło', 'folia', 'kabel', 'pasek', 'ładowarka', 'adapter', 'uchwyt', 'obudowa', 'osłona', 'przejściówka', 'stojak', 'bateria', 'poduszka', 'stelaż'];
+
 // Helper to search Ceneo directly by scraping Ceneo search HTML or product pages
 export async function searchDirectCeneo(cleanQuery: string, keyWords: string[]): Promise<{ price: number; title?: string; ceneoUrl?: string } | null> {
   try {
     const searchTerms = keyWords.slice(0, 6).join(' ');
     if (!searchTerms || searchTerms.length < 2) return null;
+
+    const queryLower = cleanQuery.toLowerCase();
+    const queryHasAccessory = ACCESSORY_WORDS.some((w) => queryLower.includes(w));
 
     const searchUrl = `https://www.ceneo.pl/;szukaj-${encodeURIComponent(searchTerms)}`;
     const res = await fetch(searchUrl, {
@@ -60,7 +65,7 @@ export async function searchDirectCeneo(cleanQuery: string, keyWords: string[]):
 
     // Case 2: Ceneo Search Results Page
     let bestResult: { price: number; title?: string; ceneoUrl?: string } | null = null;
-    let highestScore = -1;
+    let highestScore = -100;
 
     $('.cat-prod-row, .cat-prod-box, .product-card, div[data-pid]').each((_, el) => {
       const title = $(el).find('.cat-prod-row__name, .cat-prod-box__name, a.go-to-product, a[title]').first().text().trim() || $(el).find('a[title]').attr('title') || '';
@@ -100,6 +105,11 @@ export async function searchDirectCeneo(cleanQuery: string, keyWords: string[]):
           if (titleLower.includes(kw.toLowerCase())) score += 2;
         }
 
+        // Heavy penalty if candidate title contains accessory words when the user's search query did not
+        if (!queryHasAccessory && ACCESSORY_WORDS.some((acc) => titleLower.includes(acc))) {
+          score -= 15;
+        }
+
         if (score > highestScore) {
           highestScore = score;
           bestResult = {
@@ -111,7 +121,7 @@ export async function searchDirectCeneo(cleanQuery: string, keyWords: string[]):
       }
     });
 
-    if (bestResult && highestScore >= 2 && bestResult.price > 0) {
+    if (bestResult && highestScore >= 1 && bestResult.price > 0) {
       return bestResult;
     }
 
@@ -126,6 +136,9 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
   try {
     const cleanQuery = queryTitle.replace(/[^\w\s\u00C0-\u024F]/gi, ' ').replace(/\s+/g, ' ').trim();
     if (!cleanQuery || cleanQuery.length < 3) return null;
+
+    const queryLower = cleanQuery.toLowerCase();
+    const queryHasAccessory = ACCESSORY_WORDS.some((w) => queryLower.includes(w));
 
     // Polish stop words to ignore when extracting key terms
     const stopWords = new Set(['dla', 'ze', 'z', 'do', 'i', 'w', 'na', 'o', 'od', 'za', 'po', 'pod', 'przed']);
@@ -146,7 +159,7 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
     ];
 
     let bestResult: { price: number; title?: string; ceneoUrl?: string } | null = null;
-    let highestScore = -1;
+    let highestScore = -100;
 
     for (const q of searchQueries) {
       // 2. Yahoo Search Engine
@@ -177,8 +190,15 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
                   if (decoded.includes('ceneo.pl')) ceneoUrl = decoded;
                 }
               } catch {}
-            } else if (rawLink.includes('ceneo.pl')) {
+            }
+            if (!ceneoUrl && rawLink.includes('ceneo.pl') && !rawLink.includes('yahoo.com')) {
               ceneoUrl = rawLink;
+            }
+
+            if (ceneoUrl.startsWith('//')) {
+              ceneoUrl = 'https:' + ceneoUrl;
+            } else if (ceneoUrl && !ceneoUrl.startsWith('http')) {
+              ceneoUrl = 'https://' + ceneoUrl.replace(/^\/+/, '');
             }
 
             if (!ceneoUrl || !ceneoUrl.includes('ceneo.pl')) return;
@@ -186,7 +206,13 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
             const combined = (title + ' ' + snippet).trim();
             if (/pepper|kod rabatowy|kupon|zniżk|okazj|rabat|promocj/i.test(combined)) return;
 
-            const priceMatch = combined.match(/(?:od\s*)?(\d+[\d\s,]*[\.,]?\d*)\s*(?:zł|PLN)/i);
+            // Strip out shipping costs, installments, delivery promos before matching product price
+            const cleanSnippetText = combined
+              .replace(/(?:dostawa|przesyłka|wysyłka|paczkomat)\s*(?:od)?\s*\d+[\d\s,]*[\.,]?\d*\s*(?:zł|PLN)/gi, '')
+              .replace(/(?:raty?|miesiąc|mies\.?)\s*(?:od)?\s*\d+[\d\s,]*[\.,]?\d*\s*(?:zł|PLN)/gi, '')
+              .replace(/rabat\s*\d+[\d\s,]*[\.,]?\d*\s*(?:zł|PLN)/gi, '');
+
+            const priceMatch = cleanSnippetText.match(/(?:od\s*)?(\d+[\d\s,]*[\.,]?\d*)\s*(?:zł|PLN)/i);
             if (!priceMatch) return;
 
             const rawNum = priceMatch[1].replace(/\s+/g, '').replace(',', '.');
@@ -195,7 +221,6 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
 
             let score = 0;
             const combinedLower = combined.toLowerCase();
-            const queryLower = cleanQuery.toLowerCase();
 
             for (const kw of keyWords) {
               if (combinedLower.includes(kw.toLowerCase())) {
@@ -205,11 +230,8 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
 
             score += 5;
 
-            const qualifiers = ['stojak', 'stojakiem', 'fotelik', 'zestaw', 'poduszka', 'poduszką', 'termometr', '2w1', '3w1', 'stelaż'];
-            for (const qual of qualifiers) {
-              if (queryLower.includes(qual) && !combinedLower.includes(qual)) {
-                score -= 8;
-              }
+            if (!queryHasAccessory && ACCESSORY_WORDS.some((acc) => combinedLower.includes(acc))) {
+              score -= 15;
             }
 
             if (score > highestScore) {
@@ -250,13 +272,23 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
             const rawUrl = $(el).find('a.result__url').attr('href') || $(el).find('a').first().attr('href') || '';
 
             let ceneoUrl = '';
-            if (rawUrl.includes('ceneo.pl')) {
-              ceneoUrl = rawUrl;
-            } else if (rawUrl.includes('uddg=')) {
+            if (rawUrl.includes('uddg=')) {
               try {
-                const decoded = decodeURIComponent(rawUrl.split('uddg=')[1].split('&')[0]);
-                if (decoded.includes('ceneo.pl')) ceneoUrl = decoded;
+                const match = rawUrl.match(/uddg=([^&]+)/);
+                if (match) {
+                  const decoded = decodeURIComponent(match[1]);
+                  if (decoded.includes('ceneo.pl')) ceneoUrl = decoded;
+                }
               } catch {}
+            }
+            if (!ceneoUrl && rawUrl.includes('ceneo.pl') && !rawUrl.includes('duckduckgo.com')) {
+              ceneoUrl = rawUrl;
+            }
+
+            if (ceneoUrl.startsWith('//')) {
+              ceneoUrl = 'https:' + ceneoUrl;
+            } else if (ceneoUrl && !ceneoUrl.startsWith('http')) {
+              ceneoUrl = 'https://' + ceneoUrl.replace(/^\/+/, '');
             }
 
             if (!ceneoUrl || !ceneoUrl.includes('ceneo.pl')) return;
@@ -264,7 +296,13 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
             const combined = (t + ' ' + s).trim();
             if (/pepper|kod rabatowy|kupon|zniżk|okazj|rabat|promocj/i.test(combined)) return;
 
-            const priceMatch = combined.match(/(?:od\s*)?(\d+[\d\s,]*[\.,]?\d*)\s*(?:zł|PLN)/i);
+            // Strip out shipping costs, installments, delivery promos before matching product price
+            const cleanSnippetText = combined
+              .replace(/(?:dostawa|przesyłka|wysyłka|paczkomat)\s*(?:od)?\s*\d+[\d\s,]*[\.,]?\d*\s*(?:zł|PLN)/gi, '')
+              .replace(/(?:raty?|miesiąc|mies\.?)\s*(?:od)?\s*\d+[\d\s,]*[\.,]?\d*\s*(?:zł|PLN)/gi, '')
+              .replace(/rabat\s*\d+[\d\s,]*[\.,]?\d*\s*(?:zł|PLN)/gi, '');
+
+            const priceMatch = cleanSnippetText.match(/(?:od\s*)?(\d+[\d\s,]*[\.,]?\d*)\s*(?:zł|PLN)/i);
             if (!priceMatch) return;
 
             const rawNum = priceMatch[1].replace(/\s+/g, '').replace(',', '.');
@@ -273,18 +311,14 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
 
             let score = 0;
             const combinedLower = combined.toLowerCase();
-            const queryLower = cleanQuery.toLowerCase();
 
             for (const kw of keyWords) {
               if (combinedLower.includes(kw.toLowerCase())) score += 2;
             }
             score += 5;
 
-            const qualifiers = ['stojak', 'stojakiem', 'fotelik', 'zestaw', 'poduszka', 'poduszką', 'termometr', '2w1', '3w1', 'stelaż'];
-            for (const qual of qualifiers) {
-              if (queryLower.includes(qual) && !combinedLower.includes(qual)) {
-                score -= 8;
-              }
+            if (!queryHasAccessory && ACCESSORY_WORDS.some((acc) => combinedLower.includes(acc))) {
+              score -= 15;
             }
 
             if (score > highestScore) {
@@ -306,7 +340,7 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
       }
     }
 
-    if (bestResult && bestResult.price > 0) {
+    if (bestResult && bestResult.price > 0 && highestScore > 0) {
       return bestResult;
     }
 
@@ -317,3 +351,4 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
     return null;
   }
 }
+

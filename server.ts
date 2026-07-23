@@ -5,6 +5,7 @@ import { createServer as createViteServer } from 'vite';
 import { sheetsRouter } from './server/sheets';
 import { emailRouter } from './server/email';
 import { scrapeProductDetails } from './server/scraper';
+import { getAgentState, updateAgentConfig, runServerAgentCheck, startServerBackgroundScheduler } from './server/agentTask';
 
 // Resolve directory safely across ESM (dev) and CJS (production bundle)
 const getDirname = () => {
@@ -30,6 +31,25 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/sheets', sheetsRouter);
 app.use('/api/email', emailRouter);
 
+// Server-side continuous background agent endpoints
+app.get('/api/agent/state', (_req, res) => {
+  res.json(getAgentState());
+});
+
+app.post('/api/agent/config', (req, res) => {
+  const updated = updateAgentConfig(req.body);
+  res.json(updated);
+});
+
+app.post('/api/agent/run', async (_req, res) => {
+  try {
+    const newState = await runServerAgentCheck();
+    res.json(newState);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Server check failed' });
+  }
+});
+
 // Product Scraping endpoint
 app.post('/api/scrape', async (req, res) => {
   try {
@@ -45,6 +65,9 @@ app.post('/api/scrape', async (req, res) => {
     return res.status(500).json({ error: error.message || 'Scrape operation failed' });
   }
 });
+
+// Start continuous 24/7 background scheduler in Node.js
+startServerBackgroundScheduler();
 
 // Vite Middleware & Static Server
 async function startServer() {

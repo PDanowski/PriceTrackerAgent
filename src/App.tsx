@@ -97,6 +97,21 @@ export default function App() {
     localStorage.setItem('price_tracker_email', JSON.stringify(emailSettings));
   }, [emailSettings]);
 
+  // Push latest configuration to continuous background agent server
+  useEffect(() => {
+    fetch('/api/agent/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        products,
+        scheduleInterval,
+        sheetInfo,
+        emailSettings,
+        googleToken: token,
+      }),
+    }).catch((e) => console.warn('Failed to sync agent config to server:', e));
+  }, [products, scheduleInterval, sheetInfo, emailSettings, token]);
+
   // Init Firebase Auth
   useEffect(() => {
     initAuth(
@@ -114,40 +129,93 @@ export default function App() {
     );
   }, []);
 
-  // Countdown Timer for Auto Schedule
+  const targetRunTimeRef = useRef<number>(Date.now() + 10800 * 1000);
+
+  // Sync state with server
+  const syncWithServer = async () => {
+    try {
+      const res = await fetch('/api/agent/state');
+      if (res.ok) {
+        const serverState = await res.json();
+        if (serverState.products && serverState.products.length > 0) {
+          setProducts(serverState.products);
+        }
+        if (serverState.logs && serverState.logs.length > 0) {
+          setLogs(serverState.logs);
+        }
+        if (serverState.nextRunTime) {
+          const targetMs = new Date(serverState.nextRunTime).getTime();
+          targetRunTimeRef.current = targetMs;
+          const remSecs = Math.max(0, Math.ceil((targetMs - Date.now()) / 1000));
+          setNextRunSeconds(remSecs);
+        }
+        if (serverState.scheduleInterval) {
+          setScheduleInterval(serverState.scheduleInterval);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to sync state from agent server:', e);
+    }
+  };
+
+  // Real-time tab recovery listener (re-calculates exact wall-clock time when user unlocks phone/switches to Chrome tab)
+  useEffect(() => {
+    syncWithServer();
+
+    const handleTabWakeup = () => {
+      if (document.visibilityState === 'visible') {
+        syncWithServer();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleTabWakeup);
+    window.addEventListener('focus', handleTabWakeup);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleTabWakeup);
+      window.removeEventListener('focus', handleTabWakeup);
+    };
+  }, []);
+
+  // Wall-Clock Countdown Timer for Auto Schedule
   useEffect(() => {
     if (scheduleInterval === 'manual') {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
 
-    const computeIntervalSecs = () => {
+    const computeTargetMs = () => {
+      let secs = 10800;
       if (scheduleInterval === 'daily_noon_cet') {
-        return getSecondsUntilNextNoonCET();
+        secs = getSecondsUntilNextNoonCET();
+      } else {
+        secs = scheduleInterval === '15min'
+          ? 900
+          : scheduleInterval === '1hr'
+          ? 3600
+          : scheduleInterval === '3hr'
+          ? 10800
+          : scheduleInterval === '6hr'
+          ? 21600
+          : scheduleInterval === '12hr'
+          ? 43200
+          : 86400;
       }
-      return scheduleInterval === '15min'
-        ? 900
-        : scheduleInterval === '1hr'
-        ? 3600
-        : scheduleInterval === '3hr'
-        ? 10800
-        : scheduleInterval === '6hr'
-        ? 21600
-        : scheduleInterval === '12hr'
-        ? 43200
-        : 86400;
+      return Date.now() + secs * 1000;
     };
 
-    setNextRunSeconds(computeIntervalSecs());
+    if (!targetRunTimeRef.current || targetRunTimeRef.current <= Date.now()) {
+      targetRunTimeRef.current = computeTargetMs();
+    }
 
     timerRef.current = setInterval(() => {
-      setNextRunSeconds((prev) => {
-        if (prev <= 1) {
-          runFullAgentCheck();
-          return computeIntervalSecs();
-        }
-        return prev - 1;
-      });
+      const remainingSecs = Math.max(0, Math.ceil((targetRunTimeRef.current - Date.now()) / 1000));
+      setNextRunSeconds(remainingSecs);
+
+      if (remainingSecs <= 0) {
+        targetRunTimeRef.current = computeTargetMs();
+        runServerAgentRun();
+      }
     }, 1000);
 
     return () => {
@@ -190,6 +258,27 @@ export default function App() {
     setUser(null);
     setToken(null);
     addLog('info', 'Signed out from Google Account');
+  };
+
+  // Trigger agent check on server (with client fallback)
+  const runServerAgentRun = async () => {
+    if (isAgentRunning) return;
+    setIsAgentRunning(true);
+    addLog('info', 'Triggering background agent price check on cloud server...');
+    try {
+      const res = await fetch('/api/agent/run', { method: 'POST' });
+      if (res.ok) {
+        const serverState = await res.json();
+        if (serverState.products) setProducts(serverState.products);
+        if (serverState.logs) setLogs(serverState.logs);
+      } else {
+        await runFullAgentCheck();
+      }
+    } catch (err: any) {
+      await runFullAgentCheck();
+    } finally {
+      setIsAgentRunning(false);
+    }
   };
 
   // Run full price check agent loop
@@ -256,7 +345,7 @@ export default function App() {
           updatedProducts[i] = {
             ...prod,
             title: (scraped.title && !scraped.title.includes('403') && !scraped.title.includes('Cloudflare')) ? scraped.title : prod.title,
-            url: scraped.overrodeUrlToCeneo ? scraped.url : prod.url,
+            url: scraped.url || prod.url,
             imageUrl: scraped.imageUrl || prod.imageUrl,
             previousPrice: prod.currentPrice,
             currentPrice: newPrice,
@@ -614,7 +703,7 @@ export default function App() {
 
         {/* Top Control Panel */}
         <AgentControlPanel
-          onRunAgent={runFullAgentCheck}
+          onRunAgent={runServerAgentRun}
           isRunning={isAgentRunning}
           onOpenAddModal={() => setIsAddModalOpen(true)}
           searchQuery={searchQuery}
