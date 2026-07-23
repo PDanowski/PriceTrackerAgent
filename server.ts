@@ -28,6 +28,127 @@ function getGeminiClient() {
   return new GoogleGenAI({ apiKey });
 }
 
+// Helper to search Ceneo directly by scraping Ceneo search HTML or product pages
+async function searchDirectCeneo(cleanQuery: string, keyWords: string[]): Promise<{ price: number; title?: string; ceneoUrl?: string } | null> {
+  try {
+    const searchTerms = keyWords.slice(0, 6).join(' ');
+    if (!searchTerms || searchTerms.length < 2) return null;
+
+    const searchUrl = `https://www.ceneo.pl/;szukaj-${encodeURIComponent(searchTerms)}`;
+    const res = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8',
+        'Cache-Control': 'no-cache',
+      },
+      redirect: 'follow',
+    });
+
+    if (!res.ok) return null;
+
+    const htmlText = await res.text();
+    const finalResUrl = res.url || searchUrl;
+    const $ = cheerio.load(htmlText);
+
+    // Case 1: Direct Ceneo redirect to a single product page (e.g. /12345678 or -p.htm)
+    if (!finalResUrl.includes('szukaj') && (finalResUrl.includes('-p.htm') || /\/\d+$/.test(finalResUrl))) {
+      let price = 0;
+      $('script[type="application/ld+json"]').each((_, el) => {
+        try {
+          const json = JSON.parse($(el).contents().text());
+          const items = Array.isArray(json) ? json : [json];
+          for (const item of items) {
+            if (item['@type'] === 'Product' || item['@type'] === 'http://schema.org/Product') {
+              const offer = item.offers ? (Array.isArray(item.offers) ? item.offers[0] : item.offers) : null;
+              if (offer && offer.price) price = parseFloat(offer.price);
+            }
+          }
+        } catch {}
+      });
+
+      if (!price) {
+        const valAttr = $('[data-price]').first().attr('data-price') || $('.price-format .value').first().text().trim();
+        const pennyAttr = $('.price-format .penny').first().text().trim();
+        if (valAttr) {
+          const cleanVal = valAttr.replace(/\s+/g, '') + (pennyAttr ? '.' + pennyAttr.replace(',', '') : '');
+          price = parseFloat(cleanVal.replace(',', '.'));
+        }
+      }
+
+      const pTitle = $('meta[property="og:title"]').attr('content') || $('h1').first().text().trim();
+      if (price > 0) {
+        return {
+          price,
+          title: pTitle ? pTitle.replace(/\s*-\s*Ceneo.*$/i, '').trim() : undefined,
+          ceneoUrl: finalResUrl,
+        };
+      }
+    }
+
+    // Case 2: Ceneo Search Results Page
+    let bestResult: { price: number; title?: string; ceneoUrl?: string } | null = null;
+    let highestScore = -1;
+
+    $('.cat-prod-row, .cat-prod-box, .product-card, div[data-pid]').each((_, el) => {
+      const title = $(el).find('.cat-prod-row__name, .cat-prod-box__name, a.go-to-product, a[title]').first().text().trim() || $(el).find('a[title]').attr('title') || '';
+      const relHref = $(el).find('a.go-to-product, a[href*="-p"]').first().attr('href') || $(el).find('a').first().attr('href') || '';
+      if (!relHref) return;
+
+      const ceneoUrl = relHref.startsWith('http') ? relHref : `https://www.ceneo.pl${relHref.startsWith('/') ? '' : '/'}${relHref}`;
+
+      let price = 0;
+      const dataPrice = $(el).attr('data-price') || $(el).find('[data-price]').first().attr('data-price');
+      if (dataPrice) {
+        price = parseFloat(dataPrice);
+      }
+
+      if (!price || isNaN(price)) {
+        const valTxt = $(el).find('.price-format .value, .value').first().text().trim();
+        const pennyTxt = $(el).find('.price-format .penny, .penny').first().text().trim();
+        if (valTxt) {
+          const rawNum = valTxt.replace(/\s+/g, '') + (pennyTxt ? '.' + pennyTxt.replace(',', '') : '');
+          price = parseFloat(rawNum.replace(',', '.'));
+        }
+      }
+
+      if (!price || isNaN(price)) {
+        const rawTxt = $(el).find('.price, .cat-prod-row__price').text().trim();
+        const m = rawTxt.match(/(\d[\d\s]*)[,\.]?(\d{2})?\s*zł/i);
+        if (m) {
+          const n = m[1].replace(/\s+/g, '') + (m[2] ? '.' + m[2] : '.00');
+          price = parseFloat(n);
+        }
+      }
+
+      if (price > 0) {
+        let score = 0;
+        const titleLower = title.toLowerCase();
+        for (const kw of keyWords) {
+          if (titleLower.includes(kw.toLowerCase())) score += 2;
+        }
+
+        if (score > highestScore) {
+          highestScore = score;
+          bestResult = {
+            price,
+            title: title ? title.replace(/\s*-\s*Ceneo.*$/i, '').trim() : undefined,
+            ceneoUrl,
+          };
+        }
+      }
+    });
+
+    if (bestResult && highestScore >= 2 && bestResult.price > 0) {
+      return bestResult;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Helper to search Ceneo price comparator as a fallback when direct e-commerce site scraping (e.g. Allegro) is blocked
 async function searchCeneoFallback(queryTitle: string): Promise<{ price: number; title?: string; ceneoUrl?: string } | null> {
   try {
@@ -38,6 +159,12 @@ async function searchCeneoFallback(queryTitle: string): Promise<{ price: number;
     const stopWords = new Set(['dla', 'ze', 'z', 'do', 'i', 'w', 'na', 'o', 'od', 'za', 'po', 'pod', 'przed']);
     const words = cleanQuery.split(' ');
     const keyWords = words.filter((w) => !stopWords.has(w.toLowerCase()) && w.length > 1);
+
+    // 1. First priority: Direct Ceneo Search
+    const directResult = await searchDirectCeneo(cleanQuery, keyWords);
+    if (directResult && directResult.price > 0) {
+      return directResult;
+    }
 
     // Build targeted search queries preserving key features (avoiding arbitrary truncation of qualifiers like "stojak", "fotelik")
     const searchQueries = [
@@ -50,7 +177,7 @@ async function searchCeneoFallback(queryTitle: string): Promise<{ price: number;
     let highestScore = -1;
 
     for (const q of searchQueries) {
-      // 1. Yahoo Search Engine (reliable indexing of Ceneo prices and direct links)
+      // 2. Yahoo Search Engine (reliable indexing of Ceneo prices and direct links)
       try {
         const yahooUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(q)}`;
         const res = await fetch(yahooUrl, {
@@ -129,7 +256,7 @@ async function searchCeneoFallback(queryTitle: string): Promise<{ price: number;
         // Fallback to next query / engine
       }
 
-      // 2. DuckDuckGo HTML Fallback
+      // 3. DuckDuckGo HTML Fallback
       try {
         const ddgUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
         const res = await fetch(ddgUrl, {
@@ -231,22 +358,53 @@ app.post('/api/scrape', async (req, res) => {
     // Attempt to fetch product HTML with realistic browser headers
     let html = '';
     let fetchError = '';
+    const isAmazon = parsedUrl.hostname.includes('amazon.');
     try {
-      const response = await fetch(parsedUrl.href, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Accept':
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        },
+      const getHeaders = (uaType: number) => ({
+        'User-Agent': uaType === 0
+          ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+          : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept-Language': isAmazon ? 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7' : 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+      });
+
+      let response = await fetch(parsedUrl.href, {
+        headers: getHeaders(0),
         redirect: 'follow',
       });
 
-      if (!response.ok) {
-        fetchError = `HTTP status ${response.status}`;
-      } else {
+      if (response.ok) {
         html = await response.text();
+      }
+
+      // Retry for Amazon if initial response is 503/403/captcha or truncated
+      if (isAmazon && (!response.ok || !html || html.includes('Captcha') || html.includes('Robot Check') || html.length < 1500)) {
+        await new Promise((r) => setTimeout(r, 350));
+        const retryRes = await fetch(parsedUrl.href, {
+          headers: getHeaders(1),
+          redirect: 'follow',
+        });
+        if (retryRes.ok) {
+          const retryHtml = await retryRes.text();
+          if (retryHtml && retryHtml.length > 1500 && !retryHtml.includes('Captcha')) {
+            html = retryHtml;
+            fetchError = '';
+          }
+        }
+      }
+
+      if (!response.ok && !html) {
+        fetchError = `HTTP status ${response.status}`;
       }
     } catch (err: any) {
       fetchError = err.message || 'Network fetch failed';
@@ -540,8 +698,8 @@ Return ONLY valid JSON.`;
         }
         if (typeof parsed.inStock === 'boolean') scrapedInStock = parsed.inStock;
         if (parsed.imageUrl && !scrapedImage) scrapedImage = parsed.imageUrl;
-      } catch (geminiErr) {
-        console.warn('Gemini extraction fallback notice:', geminiErr);
+      } catch (geminiErr: any) {
+        // Quietly swallow Gemini quota or rate limit errors as this is an optional fallback
       }
     }
 
@@ -581,6 +739,22 @@ Return ONLY valid JSON.`;
           }
         }
 
+        // Handle Amazon product URL slugs (e.g. /Apple-iPhone-15-128GB-Czarny/dp/B0CHX1P7P4)
+        if (u.hostname.includes('amazon.')) {
+          const segs = u.pathname.split('/').filter(Boolean);
+          const dpIdx = segs.findIndex((s) => s === 'dp' || s === 'product' || s === 'gp');
+          if (dpIdx > 0 && !segs[dpIdx - 1].startsWith('-') && segs[dpIdx - 1].length > 2) {
+            const rawSlug = segs[dpIdx - 1];
+            const cleanedSlug = decodeURIComponent(rawSlug)
+              .replace(/ref=.*$/i, '')
+              .replace(/[-_]/g, ' ')
+              .trim();
+            if (cleanedSlug && cleanedSlug.length > 2 && !/^[A-Z0-9]{10}$/i.test(cleanedSlug)) {
+              return cleanedSlug.split(' ').map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : '')).join(' ');
+            }
+          }
+        }
+
         const lastSeg = u.pathname.split('/').filter(Boolean).pop() || '';
         // Remove trailing numeric offer IDs (e.g. -18129101208 or _12345678)
         const cleanedSlug = lastSeg
@@ -598,10 +772,24 @@ Return ONLY valid JSON.`;
     };
 
     const isCeneoUrl = parsedUrl.hostname.includes('ceneo.pl');
+    const isAllegroUrl = parsedUrl.hostname.includes('allegro.pl');
+    const isAmazonUrl = parsedUrl.hostname.includes('amazon.');
 
-    // Default fallback if title still missing or unparsed
-    if (!scrapedTitle || scrapedTitle.length < 3 || scrapedTitle.includes('403') || scrapedTitle.includes('Cloudflare') || scrapedTitle === 'allegro.pl') {
+    // Default fallback if title still missing or unparsed or contains Cloudflare/bot warning
+    if (!scrapedTitle || scrapedTitle.length < 3 || scrapedTitle.includes('403') || scrapedTitle.includes('Cloudflare') || scrapedTitle === 'allegro.pl' || scrapedTitle === 'amazon.pl') {
       scrapedTitle = cleanTitleFromUrl(parsedUrl.href);
+    }
+
+    // Clean Amazon brand noise from title
+    if (scrapedTitle && (scrapedTitle.toLowerCase().includes('amazon.') || scrapedTitle.startsWith('Amazon'))) {
+      scrapedTitle = scrapedTitle
+        .replace(/^Amazon\.[a-z\.]+\s*:\s*/i, '')
+        .replace(/^Amazon\s*:\s*/i, '')
+        .replace(/\s*:\s*Amazon\.[a-z\.]+\s*:\s*.*$/i, '')
+        .replace(/\s*:\s*Amazon\.[a-z\.]+/i, '')
+        .replace(/\s*:\s*Amazon$/i, '')
+        .replace(/\s*:\s*(Elektronika|Electronics|Dom|Kuchnia|Sklep|Książki)\s*$/i, '')
+        .trim();
     }
 
     const isBotBlocked = !!fetchError || !html || html.length < 1000 || html.includes('captcha') || html.includes('Challenge') || html.includes('Cloudflare');
@@ -609,39 +797,53 @@ Return ONLY valid JSON.`;
     let finalTrackedUrl = parsedUrl.href;
     let overrodeUrlToCeneo = false;
 
-    // Ceneo Price Comparator Fallback
-    if (isCeneoUrl || isBotBlocked || !scrapedPrice || scrapedPrice === 0) {
-      const ceneoResult = await searchCeneoFallback(scrapedTitle);
-      if (ceneoResult) {
-        if (ceneoResult.price && ceneoResult.price > 0) {
-          scrapedPrice = ceneoResult.price;
-          fetchedFromCeneo = true;
+    // Ceneo Price Comparator Fallback - Trigger if Allegro/Amazon/Ceneo OR if price is missing/bot-blocked on ANY site
+    const shouldTryCeneoFallback = isCeneoUrl || isAllegroUrl || isAmazonUrl || isBotBlocked || !scrapedPrice || scrapedPrice === 0;
+
+    if (shouldTryCeneoFallback && (!scrapedPrice || scrapedPrice === 0 || isBotBlocked || isCeneoUrl)) {
+      let ceneoResult = await searchCeneoFallback(scrapedTitle);
+
+      // Automatic retry with simplified keywords if initial Ceneo query produced no price
+      if (!ceneoResult || !ceneoResult.price || ceneoResult.price === 0) {
+        const simplifiedTitle = scrapedTitle.replace(/[^\w\s\u00C0-\u024F]/gi, ' ').split(/\s+/).filter(w => w.length > 1).slice(0, 4).join(' ');
+        if (simplifiedTitle && simplifiedTitle.length > 3) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          const retryResult = await searchCeneoFallback(simplifiedTitle);
+          if (retryResult && retryResult.price > 0) {
+            ceneoResult = retryResult;
+          }
         }
-        if (ceneoResult.title && ceneoResult.title.length > 5) {
+      }
+
+      if (ceneoResult && ceneoResult.price && ceneoResult.price > 0) {
+        scrapedPrice = ceneoResult.price;
+        fetchedFromCeneo = true;
+        if (!scrapedCurrency) scrapedCurrency = 'zł';
+
+        if (ceneoResult.title && ceneoResult.title.length > 5 && (isAllegroUrl || !scrapedTitle || scrapedTitle.length < 5 || scrapedTitle.includes('Amazon'))) {
           scrapedTitle = ceneoResult.title;
         }
-        if (ceneoResult.ceneoUrl) {
+
+        if (ceneoResult.ceneoUrl && isAllegroUrl) {
           finalTrackedUrl = ceneoResult.ceneoUrl;
-          if (!isCeneoUrl) {
-            overrodeUrlToCeneo = true;
-          }
+          overrodeUrlToCeneo = true;
         }
       }
     }
 
-    const needsManualPrice = !fetchedFromCeneo && (isBotBlocked || !scrapedPrice || scrapedPrice === 0);
-
-    if (!scrapedPrice || isNaN(scrapedPrice)) {
-      scrapedPrice = 199.00; // Default placeholder price
-    }
+    const needsManualPrice = !scrapedPrice || scrapedPrice === 0;
 
     let scrapeWarning: string | undefined;
     if (overrodeUrlToCeneo) {
-      scrapeWarning = `Serwis (np. Allegro) stosuje ochronę anty-bot. Cenę (${scrapedPrice.toFixed(2)} zł) oraz adres do automatycznego śledzenia podmieniono na link z porównywarki Ceneo (${finalTrackedUrl})!`;
+      scrapeWarning = `Serwis Allegro stosuje ochronę anty-bot. Cenę (${scrapedPrice.toFixed(2)} zł) oraz adres do automatycznego śledzenia podmieniono na link z porównywarki Ceneo (${finalTrackedUrl})!`;
     } else if (fetchedFromCeneo) {
-      scrapeWarning = `Pobrano dane produktu z porównywarki Ceneo (${scrapedPrice.toFixed(2)} zł).`;
+      scrapeWarning = `Pobrano cenę (${scrapedPrice.toFixed(2)} ${scrapedCurrency || 'zł'}) z porównywarki Ceneo dla "${scrapedTitle}".`;
     } else if (needsManualPrice) {
-      scrapeWarning = 'Serwis (np. Allegro) stosuje ochronę anty-bot. Tytuł wyciągnięto z adresu URL — sprawdź i wpisz dokładną cenę ręcznie.';
+      scrapeWarning = isAllegroUrl
+        ? 'Serwis Allegro stosuje ochronę anty-bot, a Ceneo nie zwróciło cen. Wpisz cenę ręcznie.'
+        : isAmazonUrl
+        ? 'Strona Amazon wymagała weryfikacji anty-bot i Ceneo nie znalazło jednoznacznej ceny. Sprawdź i wpisz cenę ręcznie.'
+        : 'Nie udało się automatycznie odczytać ceny z tej strony. Sprawdź i wpisz cenę ręcznie.';
     }
 
     return res.json({

@@ -30,13 +30,18 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
   const [showDriveDropdown, setShowDriveDropdown] = useState(false);
 
   const handleFetchDriveSheets = async () => {
-    if (!userTokenAvailable) {
+    let tok = localStorage.getItem('google_access_token');
+    if (!userTokenAvailable || !tok) {
       onPromptSignIn();
       return;
     }
     setIsLoadingDrive(true);
     try {
-      const response = await fetch('/api/sheets/list');
+      const response = await fetch('/api/sheets/list', {
+        headers: {
+          Authorization: `Bearer ${tok}`,
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setDriveSheets(data.files || []);

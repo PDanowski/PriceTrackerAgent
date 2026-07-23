@@ -49,7 +49,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       const data = await response.json();
       if (data.url) setUrl(data.url);
       setTitle(data.title || '');
-      setPrice(data.price ? data.price.toString() : '199.00');
+      setPrice(data.price && data.price > 0 ? data.price.toString() : '');
       setCurrency(data.currency || 'zł');
       setImageUrl(data.imageUrl || '');
       setInStock(data.inStock !== false);
@@ -205,7 +205,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                     type="number"
                     step="0.01"
                     required
-                    placeholder="199.00"
+                    placeholder="np. 299.00"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"

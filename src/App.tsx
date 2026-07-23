@@ -236,7 +236,7 @@ export default function App() {
 
         if (response.ok) {
           const scraped = await response.json();
-          const newPrice = scraped.price || prod.currentPrice;
+          const newPrice = (scraped.price && scraped.price > 0) ? scraped.price : prod.currentPrice;
 
           // Track ALL prices (calculate price drop percentage vs previous day / previous recorded price)
           const basePreviousPrice = prod.previousPrice || prod.currentPrice;
@@ -278,8 +278,8 @@ export default function App() {
 
           updatedProducts[i] = {
             ...prod,
-            title: scraped.title || prod.title,
-            url: scraped.url || prod.url,
+            title: (scraped.title && !scraped.title.includes('403') && !scraped.title.includes('Cloudflare')) ? scraped.title : prod.title,
+            url: scraped.overrodeUrlToCeneo ? scraped.url : prod.url,
             imageUrl: scraped.imageUrl || prod.imageUrl,
             previousPrice: prod.currentPrice,
             currentPrice: newPrice,
@@ -333,7 +333,7 @@ export default function App() {
 
       if (response.ok) {
         const scraped = await response.json();
-        const newPrice = scraped.price || prod.currentPrice;
+        const newPrice = (scraped.price && scraped.price > 0) ? scraped.price : prod.currentPrice;
 
         const updated = products.map((p) => {
           if (p.id === id) {
@@ -341,8 +341,8 @@ export default function App() {
 
             return {
               ...p,
-              title: scraped.title || p.title,
-              url: scraped.url || p.url,
+              title: (scraped.title && !scraped.title.includes('403') && !scraped.title.includes('Cloudflare')) ? scraped.title : p.title,
+              url: scraped.overrodeUrlToCeneo ? scraped.url : p.url,
               imageUrl: scraped.imageUrl || p.imageUrl,
               previousPrice: p.currentPrice !== newPrice ? p.currentPrice : p.previousPrice,
               currentPrice: newPrice,
@@ -460,8 +460,13 @@ export default function App() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Sync failed');
+        const err = await response.json().catch(() => ({ error: 'Sync failed' }));
+        if (response.status === 401) {
+          setToken(null);
+          localStorage.removeItem('google_access_token');
+          throw new Error('Google access token expired or invalid (401). Please click "Sync Now" to sign in again.');
+        }
+        throw new Error(err.error || `Sync failed with status ${response.status}`);
       }
 
       setSheetInfo((prev) =>
@@ -665,8 +670,33 @@ export default function App() {
             sheetInfo={sheetInfo}
             onCreateSheet={handleCreateGoogleSheet}
             onSyncSheet={async () => {
-              const tok = token || (await getAccessToken());
-              if (sheetInfo && tok) await syncToGoogleSheet(sheetInfo.id, products, tok);
+              let tok = token || (await getAccessToken());
+              if (!tok) {
+                addLog('info', 'Google Auth token required. Initiating Google sign-in...');
+                try {
+                  const res = await googleSignIn();
+                  if (res) {
+                    setUser(res.user);
+                    setToken(res.accessToken);
+                    tok = res.accessToken;
+                  }
+                } catch (err: any) {
+                  addLog('error', 'Google Sign-in failed', err.message);
+                  return;
+                }
+              }
+
+              if (!tok) {
+                addLog('error', 'Google Sheet sync cancelled', 'Google Access Token is required.');
+                return;
+              }
+
+              if (!sheetInfo) {
+                addLog('error', 'Google Sheet sync error', 'No Google Sheet connected. Create or connect a sheet first.');
+                return;
+              }
+
+              await syncToGoogleSheet(sheetInfo.id, products, tok);
             }}
             onSelectExistingSheet={(id, name, url) => {
               setSheetInfo({
