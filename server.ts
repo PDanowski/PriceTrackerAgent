@@ -209,7 +209,12 @@ async function searchCeneoFallback(queryTitle: string): Promise<{ price: number;
               ceneoUrl = rawLink;
             }
 
+            // Strictly require Ceneo URLs and ignore coupon/deal aggregator sites
+            if (!ceneoUrl || !ceneoUrl.includes('ceneo.pl')) return;
+
             const combined = (title + ' ' + snippet).trim();
+            if (/pepper|kod rabatowy|kupon|zniżk|okazj|rabat|promocj/i.test(combined)) return;
+
             const priceMatch = combined.match(/(?:od\s*)?(\d+[\d\s,]*[\.,]?\d*)\s*(?:zł|PLN)/i);
             if (!priceMatch) return;
 
@@ -228,7 +233,7 @@ async function searchCeneoFallback(queryTitle: string): Promise<{ price: number;
               }
             }
 
-            if (ceneoUrl) score += 5;
+            score += 5;
 
             // Important qualifying terms penalty (e.g. "stojak", "stojakiem", "fotelik", "zestaw", "poduszka", "termometr")
             const qualifiers = ['stojak', 'stojakiem', 'fotelik', 'zestaw', 'poduszka', 'poduszką', 'termometr', '2w1', '3w1', 'stelaż'];
@@ -243,12 +248,12 @@ async function searchCeneoFallback(queryTitle: string): Promise<{ price: number;
               bestResult = {
                 price: val,
                 title: title.replace(/\s*-\s*Ceneo.*$/i, '').replace(/\s*-\s*Ceny.*$/i, '').replace(/[\.\. ]+$/g, '').trim() || undefined,
-                ceneoUrl: ceneoUrl || `https://www.ceneo.pl/;szukaj-${encodeURIComponent(keyWords.slice(0, 5).join(' '))}`,
+                ceneoUrl,
               };
             }
           });
 
-          if (bestResult && bestResult.price > 0 && highestScore >= 6) {
+          if (bestResult && bestResult.price > 0 && highestScore >= 7) {
             return bestResult;
           }
         }
@@ -285,7 +290,11 @@ async function searchCeneoFallback(queryTitle: string): Promise<{ price: number;
               } catch {}
             }
 
+            if (!ceneoUrl || !ceneoUrl.includes('ceneo.pl')) return;
+
             const combined = (t + ' ' + s).trim();
+            if (/pepper|kod rabatowy|kupon|zniżk|okazj|rabat|promocj/i.test(combined)) return;
+
             const priceMatch = combined.match(/(?:od\s*)?(\d+[\d\s,]*[\.,]?\d*)\s*(?:zł|PLN)/i);
             if (!priceMatch) return;
 
@@ -300,7 +309,7 @@ async function searchCeneoFallback(queryTitle: string): Promise<{ price: number;
             for (const kw of keyWords) {
               if (combinedLower.includes(kw.toLowerCase())) score += 2;
             }
-            if (ceneoUrl) score += 5;
+            score += 5;
 
             const qualifiers = ['stojak', 'stojakiem', 'fotelik', 'zestaw', 'poduszka', 'poduszką', 'termometr', '2w1', '3w1', 'stelaż'];
             for (const qual of qualifiers) {
@@ -314,12 +323,12 @@ async function searchCeneoFallback(queryTitle: string): Promise<{ price: number;
               bestResult = {
                 price: val,
                 title: t.replace(/\s*-\s*Ceneo.*$/i, '').replace(/\s*-\s*Ceny.*$/i, '').replace(/[\.\. ]+$/g, '').trim() || undefined,
-                ceneoUrl: ceneoUrl || `https://www.ceneo.pl/;szukaj-${encodeURIComponent(keyWords.slice(0, 5).join(' '))}`,
+                ceneoUrl,
               };
             }
           });
 
-          if (bestResult && bestResult.price > 0 && highestScore >= 6) {
+          if (bestResult && bestResult.price > 0 && highestScore >= 7) {
             return bestResult;
           }
         }
@@ -359,6 +368,14 @@ app.post('/api/scrape', async (req, res) => {
     let html = '';
     let fetchError = '';
     const isAmazon = parsedUrl.hostname.includes('amazon.');
+    let targetFetchUrl = parsedUrl.href;
+    if (isAmazon) {
+      const asinMatch = parsedUrl.pathname.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
+      if (asinMatch && asinMatch[1]) {
+        targetFetchUrl = `https://${parsedUrl.hostname}/dp/${asinMatch[1]}`;
+      }
+    }
+
     try {
       const getHeaders = (uaType: number) => ({
         'User-Agent': uaType === 0
@@ -378,7 +395,7 @@ app.post('/api/scrape', async (req, res) => {
         'Upgrade-Insecure-Requests': '1',
       });
 
-      let response = await fetch(parsedUrl.href, {
+      let response = await fetch(targetFetchUrl, {
         headers: getHeaders(0),
         redirect: 'follow',
       });
@@ -390,7 +407,7 @@ app.post('/api/scrape', async (req, res) => {
       // Retry for Amazon if initial response is 503/403/captcha or truncated
       if (isAmazon && (!response.ok || !html || html.includes('Captcha') || html.includes('Robot Check') || html.length < 1500)) {
         await new Promise((r) => setTimeout(r, 350));
-        const retryRes = await fetch(parsedUrl.href, {
+        const retryRes = await fetch(targetFetchUrl, {
           headers: getHeaders(1),
           redirect: 'follow',
         });
@@ -419,9 +436,11 @@ app.post('/api/scrape', async (req, res) => {
     if (html) {
       const $ = cheerio.load(html);
 
-      // Remove non-main elements (suggested, related, recommended products, ads, footers) before scraping DOM
+      // Remove non-main elements (suggested, related, recommended products, ads, footers, strikethrough list prices) before scraping DOM
       const $clean = cheerio.load(html);
       $clean('aside, footer, nav, .recommended, .suggestions, .suggested-products, .related-products, .similar-items, #recommendations, .cross-sell, .up-sell, [data-component="carousel"]').remove();
+      // Remove strikethrough old/list/recommended prices so they are not parsed as current price
+      $clean('.a-text-price, .a-text-strike, del, s, .strike, .old-price, .basisPrice, .original-price, [data-a-stripe], .listPrice, #listPrice, #priceblock_listprice, .was-price, .rrp-price').remove();
 
       // Helper to turn relative image paths into full URLs
       const resolveUrl = (imgSrc: string | undefined): string => {
@@ -604,31 +623,105 @@ app.post('/api/scrape', async (req, res) => {
         scrapedImage = extractMainProductImage($clean);
       }
 
-      // OpenGraph price
+      // OpenGraph & Schema itemprop price
       if (!scrapedPrice) {
         const ogPrice =
           $clean('meta[property="product:price:amount"]').attr('content') ||
-          $clean('meta[property="og:price:amount"]').attr('content');
-        if (ogPrice) scrapedPrice = parseFloat(ogPrice.replace(',', '.'));
+          $clean('meta[property="og:price:amount"]').attr('content') ||
+          $clean('meta[itemprop="price"]').attr('content') ||
+          $clean('[itemprop="price"]').attr('content') ||
+          $clean('[itemprop="price"]').attr('data-price-amount') ||
+          $clean('[data-price-amount]').attr('data-price-amount');
+        if (ogPrice) {
+          const match = ogPrice.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
+          if (match && match[1]) {
+            const parsedVal = parseFloat(match[1].replace(/\s/g, '').replace(',', '.'));
+            if (!isNaN(parsedVal) && parsedVal > 0) {
+              scrapedPrice = parsedVal;
+            }
+          }
+        }
       }
 
       // 3. Cheerio DOM selector heuristics targeting main product area
+      if (parsedUrl.hostname.includes('amazon.')) {
+        const amzTitle = $clean('#productTitle').first().text().trim();
+        if (amzTitle && amzTitle.length > 2) {
+          scrapedTitle = amzTitle;
+        }
+
+        const amzPriceSelectors = [
+          '#apex_desktop .priceToPay .a-offscreen',
+          '#corePrice_desktop .priceToPay .a-offscreen',
+          '#corePriceDisplay_desktop_feature_div .priceToPay .a-offscreen',
+          '#corePrice_feature_div .priceToPay .a-offscreen',
+          '#price_inside_buybox',
+          '#newBuyBoxPrice',
+          '#priceblock_dealprice',
+          '#priceblock_ourprice',
+          '#priceblock_saleprice',
+          '.apexPriceToPay .a-offscreen',
+          '.priceToPay .a-offscreen',
+          '#corePrice_feature_div .a-price:not(.a-text-price) .a-offscreen',
+          '#price .a-price:not(.a-text-price) .a-offscreen',
+          '#buybox .a-price:not(.a-text-price) .a-offscreen',
+        ];
+
+        for (const sel of amzPriceSelectors) {
+          const txt = $clean(sel).first().text().trim();
+          if (txt) {
+            const match = txt.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
+            if (match && match[1]) {
+              const cleanedNumStr = match[1].replace(/\s/g, '').replace(',', '.');
+              const parsedVal = parseFloat(cleanedNumStr);
+              if (!isNaN(parsedVal) && parsedVal > 0) {
+                scrapedPrice = parsedVal;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!scrapedPrice || scrapedPrice === 0) {
+          const whole = $clean('.priceToPay .a-price-whole, #corePrice_feature_div .a-price-whole').first().text().trim();
+          const fraction = $clean('.priceToPay .a-price-fraction, #corePrice_feature_div .a-price-fraction').first().text().trim();
+          if (whole) {
+            const cleanW = whole.replace(/[^\d]/g, '');
+            const cleanF = fraction ? fraction.replace(/[^\d]/g, '') : '00';
+            if (cleanW) {
+              const p = parseFloat(`${cleanW}.${cleanF}`);
+              if (!isNaN(p) && p > 0) {
+                scrapedPrice = p;
+              }
+            }
+          }
+        }
+      }
+
       if (!scrapedPrice || !scrapedCurrency) {
         const priceTextSelectors = [
+          '.priceToPay .a-offscreen',
           '#priceblock_ourprice',
           '#priceblock_dealprice',
-          '#corePrice_feature_div .a-offscreen',
+          '[itemprop="price"]',
+          '[data-price-amount]',
+          '[data-price-type="finalPrice"]',
+          '.price-box .price',
+          '.price-box',
+          '.cena_brutto',
+          '.cena-main',
+          '.price_val',
+          '.product_price',
           '.product-price-primary',
           '.main-product .price',
           'main .price',
           '#price',
           '[data-price]',
           '.product-price',
-          '.a-price-whole',
-          'span.a-offscreen',
           '.price-val',
           '.price',
           '.cena',
+          '.cenag',
         ];
         for (const sel of priceTextSelectors) {
           const txt = $clean(sel).first().text().trim();
@@ -665,7 +758,7 @@ app.post('/api/scrape', async (req, res) => {
       try {
         const bodySnippet = html ? cheerio.load(html)('main, #main, #content, body').text().slice(0, 4000) : '';
         const prompt = `Extract product details for main item at URL "${parsedUrl.href}".
-CRITICAL INSTRUCTION: Identify ONLY the price and currency of the MAIN subject product being viewed. Do NOT extract prices of suggested, related, or cross-sell products.
+CRITICAL INSTRUCTION: Identify ONLY the actual buying price to pay (sale price) for the MAIN product. Do NOT extract strikethrough list prices, recommended RRP, unit prices (e.g. price per piece/sztuka), or shipping costs.
 Parse the exact currency symbol or code (e.g. "zł", "PLN", "€", "$", "£", "CHF") as displayed on the webpage. Do NOT hardcode or assume the currency unless clearly indicated.
 
 Page text snippet:
@@ -792,15 +885,16 @@ Return ONLY valid JSON.`;
         .trim();
     }
 
-    const isBotBlocked = !!fetchError || !html || html.length < 1000 || html.includes('captcha') || html.includes('Challenge') || html.includes('Cloudflare');
+    const isBotBlocked = !!fetchError || !html || html.length < 500 || (scrapedPrice === 0 && (html.includes('captcha') || html.includes('Robot Check')));
     let fetchedFromCeneo = false;
     let finalTrackedUrl = parsedUrl.href;
     let overrodeUrlToCeneo = false;
 
-    // Ceneo Price Comparator Fallback - Trigger if Allegro/Amazon/Ceneo OR if price is missing/bot-blocked on ANY site
-    const shouldTryCeneoFallback = isCeneoUrl || isAllegroUrl || isAmazonUrl || isBotBlocked || !scrapedPrice || scrapedPrice === 0;
+    // Ceneo Price Comparator Fallback - Trigger ONLY if direct price is missing, or if user gave Ceneo/Allegro link
+    const needsPriceFallback = !scrapedPrice || scrapedPrice === 0;
+    const shouldTryCeneoFallback = isCeneoUrl || (needsPriceFallback && (isAllegroUrl || isAmazonUrl || isBotBlocked || true));
 
-    if (shouldTryCeneoFallback && (!scrapedPrice || scrapedPrice === 0 || isBotBlocked || isCeneoUrl)) {
+    if (shouldTryCeneoFallback && (needsPriceFallback || isCeneoUrl)) {
       let ceneoResult = await searchCeneoFallback(scrapedTitle);
 
       // Automatic retry with simplified keywords if initial Ceneo query produced no price
@@ -820,8 +914,11 @@ Return ONLY valid JSON.`;
         fetchedFromCeneo = true;
         if (!scrapedCurrency) scrapedCurrency = 'zł';
 
-        if (ceneoResult.title && ceneoResult.title.length > 5 && (isAllegroUrl || !scrapedTitle || scrapedTitle.length < 5 || scrapedTitle.includes('Amazon'))) {
-          scrapedTitle = ceneoResult.title;
+        const isBadTitle = ceneoResult.title && /pepper|kod rabatowy|kupon|zniżk|okazj|rabat|promocj/i.test(ceneoResult.title);
+        if (ceneoResult.title && ceneoResult.title.length > 5 && !isBadTitle) {
+          if (!scrapedTitle || scrapedTitle.length < 5 || scrapedTitle === 'allegro.pl' || scrapedTitle === 'amazon.pl') {
+            scrapedTitle = ceneoResult.title;
+          }
         }
 
         if (ceneoResult.ceneoUrl && isAllegroUrl) {
@@ -835,9 +932,9 @@ Return ONLY valid JSON.`;
 
     let scrapeWarning: string | undefined;
     if (overrodeUrlToCeneo) {
-      scrapeWarning = `Serwis Allegro stosuje ochronę anty-bot. Cenę (${scrapedPrice.toFixed(2)} zł) oraz adres do automatycznego śledzenia podmieniono na link z porównywarki Ceneo (${finalTrackedUrl})!`;
-    } else if (fetchedFromCeneo) {
-      scrapeWarning = `Pobrano cenę (${scrapedPrice.toFixed(2)} ${scrapedCurrency || 'zł'}) z porównywarki Ceneo dla "${scrapedTitle}".`;
+      scrapeWarning = `Serwis Allegro stosuje ochronę anty-bot. Cenę (${scrapedPrice.toFixed(2)} zł) oraz adres do śledzenia przełączono na porównywarkę Ceneo (${finalTrackedUrl}).`;
+    } else if (fetchedFromCeneo && !isCeneoUrl) {
+      scrapeWarning = `Nie udało się bezpośrednio odczytać ceny ze strony sklepu. Pobrano cenę (${scrapedPrice.toFixed(2)} ${scrapedCurrency || 'zł'}) z porównywarki Ceneo dla "${scrapedTitle}".`;
     } else if (needsManualPrice) {
       scrapeWarning = isAllegroUrl
         ? 'Serwis Allegro stosuje ochronę anty-bot, a Ceneo nie zwróciło cen. Wpisz cenę ręcznie.'
@@ -893,6 +990,12 @@ app.post('/api/sheets/create', async (req, res) => {
               gridProperties: { frozenRowCount: 1 },
             },
           },
+          {
+            properties: {
+              title: 'Daily History',
+              gridProperties: { frozenRowCount: 1 },
+            },
+          },
         ],
       }),
     });
@@ -906,13 +1009,13 @@ app.post('/api/sheets/create', async (req, res) => {
     const spreadsheetId = data.spreadsheetId;
     const spreadsheetUrl = data.spreadsheetUrl || `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
 
-    // Populate header row
+    // Populate header row for Price Log
     const headers = [
-      ['Product Title', 'Product URL', 'Current Price', 'Previous Price', 'Lowest Price', 'Target Price', 'In Stock', 'Last Checked', 'Price Delta'],
+      ['Product Title', 'Product URL', 'Current Price', 'Previous Price', 'Lowest Recorded', 'In Stock', 'Last Checked', 'Status'],
     ];
 
     await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Price Log!A1:I1?valueInputOption=USER_ENTERED`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Price Log!A1:H1?valueInputOption=USER_ENTERED`,
       {
         method: 'PUT',
         headers: {
@@ -922,6 +1025,23 @@ app.post('/api/sheets/create', async (req, res) => {
         body: JSON.stringify({ values: headers }),
       }
     );
+
+    // Populate header row for Daily History
+    const historyHeaders = [
+      ['Date', 'Product Title', 'Daily Lowest Price', 'Currency', 'Recorded At'],
+    ];
+
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Daily History!A1:E1?valueInputOption=USER_ENTERED`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ values: historyHeaders }),
+      }
+    ).catch(() => {});
 
     return res.json({
       spreadsheetId,
@@ -952,27 +1072,81 @@ app.post('/api/sheets/sync', async (req, res) => {
       return res.status(400).json({ error: 'Products array is required' });
     }
 
-    const formatPriceStr = (val: number | null, curr: string) => {
-      if (val === null || val === undefined) return 'N/A';
-      const formatted = val.toFixed(2);
+    // 1. Fetch spreadsheet metadata to get the actual tab title (e.g. 'Price Log' or 'Sheet1')
+    let mainSheetTitle = 'Price Log';
+    let historySheetTitle = 'Daily History';
+    let hasHistorySheet = false;
+
+    try {
+      const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (metaRes.ok) {
+        const metaData = await metaRes.json();
+        const sheetList = metaData.sheets || [];
+        if (sheetList.length > 0 && sheetList[0]?.properties?.title) {
+          mainSheetTitle = sheetList[0].properties.title;
+        }
+        const histSheet = sheetList.find((s: any) => s.properties?.title?.toLowerCase().includes('history'));
+        if (histSheet?.properties?.title) {
+          historySheetTitle = histSheet.properties.title;
+          hasHistorySheet = true;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch spreadsheet metadata, falling back to default tab titles:', e);
+    }
+
+    const formatPriceStr = (val: any, curr: string) => {
+      if (val === null || val === undefined || val === '') return 'N/A';
+      const num = typeof val === 'number' ? val : parseFloat(val);
+      if (isNaN(num)) return 'N/A';
+      const formatted = num.toFixed(2);
       return curr === 'zł' || curr === 'PLN' ? `${formatted} zł` : `${curr}${formatted}`;
     };
 
     const rows = [
       ['Product Title', 'Product URL', 'Current Price', 'Previous Price', 'Lowest Recorded', 'In Stock', 'Last Checked', 'Status'],
-      ...products.map((p: any) => [
-        p.title,
-        p.url,
-        formatPriceStr(p.currentPrice, p.currency || 'zł'),
-        p.previousPrice !== null ? formatPriceStr(p.previousPrice, p.currency || 'zł') : 'N/A',
-        formatPriceStr(p.lowestPrice, p.currency || 'zł'),
-        p.inStock ? 'In Stock' : 'Out of Stock',
-        p.lastChecked ? new Date(p.lastChecked).toLocaleString() : 'Never',
-        p.previousPrice && p.currentPrice < p.previousPrice ? '📉 PRICE DROP' : 'Stable',
-      ]),
+      ...products.map((p: any) => {
+        const currentP = p.currentPrice !== undefined ? p.currentPrice : null;
+        const prevP = p.previousPrice !== undefined ? p.previousPrice : null;
+        const lowestP = p.lowestPrice !== undefined ? p.lowestPrice : currentP;
+        const curr = p.currency || 'zł';
+        const isDrop = prevP !== null && currentP !== null && currentP < prevP;
+
+        let lastCheckedStr = 'Never';
+        if (p.lastChecked) {
+          const d = new Date(p.lastChecked);
+          lastCheckedStr = !isNaN(d.getTime()) ? d.toLocaleString() : String(p.lastChecked);
+        }
+
+        return [
+          p.title || 'Bez nazwy',
+          p.url || '',
+          formatPriceStr(currentP, curr),
+          prevP !== null ? formatPriceStr(prevP, curr) : 'N/A',
+          formatPriceStr(lowestP, curr),
+          p.inStock !== false ? 'Dostępny' : 'Brak w magazynie',
+          lastCheckedStr,
+          isDrop ? '📉 SPADEK CENY' : 'Stabilna',
+        ];
+      }),
     ];
 
-    const range = `Price Log!A1:H${rows.length}`;
+    // 2. Clear entire main sheet content first so no stale leftover rows remain
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(mainSheetTitle + '!A1:Z2000')}:clear`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    ).catch(() => {});
+
+    // 3. Write all rows cleanly
+    const range = `${mainSheetTitle}!A1:H${rows.length}`;
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
       {
@@ -990,43 +1164,59 @@ app.post('/api/sheets/sync', async (req, res) => {
       return res.status(response.status).json({ error: `Google Sheets sync error: ${errText}` });
     }
 
-    // Also sync Daily Lowest History Log if history exists
-    const dailyHistoryRows = [
-      ['Date', 'Product Title', 'Daily Lowest Price', 'Currency', 'Recorded At'],
-    ];
-    products.forEach((p: any) => {
-      if (Array.isArray(p.priceHistory)) {
-        p.priceHistory.forEach((pt: any) => {
-          const dateStr = pt.timestamp ? pt.timestamp.split('T')[0] : 'N/A';
-          dailyHistoryRows.push([
-            dateStr,
-            p.title,
-            pt.price !== undefined ? pt.price.toFixed(2) : '0.00',
-            p.currency || 'zł',
-            pt.timestamp ? new Date(pt.timestamp).toLocaleString() : 'N/A',
-          ]);
-        });
-      }
-    });
-
-    if (dailyHistoryRows.length > 1) {
-      const historyRange = `Daily History!A1:E${dailyHistoryRows.length}`;
-      await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(historyRange)}?valueInputOption=USER_ENTERED`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ values: dailyHistoryRows }),
+    // 4. Also sync Daily Lowest History Log if history exists
+    if (hasHistorySheet) {
+      const dailyHistoryRows = [
+        ['Date', 'Product Title', 'Daily Lowest Price', 'Currency', 'Recorded At'],
+      ];
+      products.forEach((p: any) => {
+        if (Array.isArray(p.priceHistory)) {
+          p.priceHistory.forEach((pt: any) => {
+            const dateStr = pt.timestamp ? (typeof pt.timestamp === 'string' ? pt.timestamp.split('T')[0] : 'N/A') : 'N/A';
+            const priceNum = typeof pt.price === 'number' ? pt.price : parseFloat(pt.price);
+            dailyHistoryRows.push([
+              dateStr,
+              p.title || 'Bez nazwy',
+              !isNaN(priceNum) ? priceNum.toFixed(2) : '0.00',
+              p.currency || 'zł',
+              pt.timestamp ? (isNaN(new Date(pt.timestamp).getTime()) ? String(pt.timestamp) : new Date(pt.timestamp).toLocaleString()) : 'N/A',
+            ]);
+          });
         }
-      ).catch(() => {}); // Optional secondary sheet range update
+      });
+
+      if (dailyHistoryRows.length > 1) {
+        // Clear history sheet
+        await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(historySheetTitle + '!A1:Z2000')}:clear`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        ).catch(() => {});
+
+        const historyRange = `${historySheetTitle}!A1:E${dailyHistoryRows.length}`;
+        await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(historyRange)}?valueInputOption=USER_ENTERED`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ values: dailyHistoryRows }),
+          }
+        ).catch(() => {});
+      }
     }
 
     return res.json({
       success: true,
       syncedCount: products.length,
+      sheetTitle: mainSheetTitle,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

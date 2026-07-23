@@ -373,7 +373,7 @@ export default function App() {
   };
 
   // Handle updating a product's price manually
-  const handleUpdatePrice = (id: string, newPrice: number) => {
+  const handleUpdatePrice = async (id: string, newPrice: number) => {
     const updated = products.map((p) => {
       if (p.id === id) {
         const newHistory = recordDailyLowestPrice(p.priceHistory || [], newPrice);
@@ -390,6 +390,11 @@ export default function App() {
     });
     setProducts(updated);
     addLog('info', `Ręcznie zaktualizowano cenę produktu do ${newPrice.toFixed(2)} PLN`);
+
+    const currentToken = token || (await getAccessToken());
+    if (sheetInfo && sheetInfo.autoSync && currentToken) {
+      await syncToGoogleSheet(sheetInfo.id, updated, currentToken);
+    }
   };
 
   // Create Google Sheet
@@ -444,7 +449,7 @@ export default function App() {
   // Sync to Google Sheet
   const syncToGoogleSheet = async (spreadsheetId: string, currentProducts: Product[], accessToken: string) => {
     setIsSyncingSheet(true);
-    addLog('info', 'Syncing latest prices to Google Sheet...');
+    addLog('info', `Syncing ${currentProducts.length} items to Google Sheet...`);
 
     try {
       const response = await fetch('/api/sheets/sync', {
@@ -469,6 +474,8 @@ export default function App() {
         throw new Error(err.error || `Sync failed with status ${response.status}`);
       }
 
+      const resData = await response.json().catch(() => ({}));
+
       setSheetInfo((prev) =>
         prev
           ? {
@@ -479,7 +486,10 @@ export default function App() {
           : null
       );
 
-      addLog('success', `Successfully synced ${currentProducts.length} items to Google Sheet!`);
+      addLog(
+        'success',
+        `Successfully synced ${currentProducts.length} product rows to tab "${resData.sheetTitle || 'Price Log'}" in Google Sheet!`
+      );
     } catch (err: any) {
       addLog('error', 'Google Sheet sync error', err.message);
     } finally {
@@ -587,7 +597,7 @@ export default function App() {
   };
 
   // Add new product handler
-  const handleAddProduct = (newProd: Omit<Product, 'id' | 'priceHistory' | 'status'>) => {
+  const handleAddProduct = async (newProd: Omit<Product, 'id' | 'priceHistory' | 'status'>) => {
     const created: Product = {
       ...newProd,
       id: `prod-${Date.now()}`,
@@ -595,16 +605,28 @@ export default function App() {
       priceHistory: [{ timestamp: new Date().toISOString(), price: newProd.currentPrice }],
     };
 
-    setProducts((prev) => [created, ...prev]);
+    const updated = [created, ...products];
+    setProducts(updated);
     addLog('success', `Added new product link: "${created.title}"`, `Initial Price: ${created.currentPrice.toFixed(2)} ${created.currency}`);
+
+    const currentToken = token || (await getAccessToken());
+    if (sheetInfo && sheetInfo.autoSync && currentToken) {
+      await syncToGoogleSheet(sheetInfo.id, updated, currentToken);
+    }
   };
 
   // Delete product
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     const target = products.find((p) => p.id === id);
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    const updated = products.filter((p) => p.id !== id);
+    setProducts(updated);
     if (target) {
       addLog('info', `Usunięto produkt z listy: "${target.title}"`);
+    }
+
+    const currentToken = token || (await getAccessToken());
+    if (sheetInfo && sheetInfo.autoSync && currentToken) {
+      await syncToGoogleSheet(sheetInfo.id, updated, currentToken);
     }
   };
 
