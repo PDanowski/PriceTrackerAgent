@@ -153,6 +153,16 @@ sheetsRouter.post('/sync', async (req, res) => {
         const lowestP = p.lowestPrice !== undefined ? p.lowestPrice : currentP;
         const curr = p.currency || 'zł';
         const isDrop = prevP !== null && currentP !== null && currentP < prevP;
+        const isIncrease = prevP !== null && currentP !== null && currentP > prevP;
+
+        let statusText = 'Stabilna';
+        if (isDrop) {
+          const pct = (((prevP - currentP) / prevP) * 100).toFixed(1);
+          statusText = `📉 SPADEK CENY (-${pct}%)`;
+        } else if (isIncrease) {
+          const pct = (((currentP - prevP) / prevP) * 100).toFixed(1);
+          statusText = `📈 WZROST CENY (+${pct}%)`;
+        }
 
         let lastCheckedStr = 'Never';
         if (p.lastChecked) {
@@ -168,7 +178,7 @@ sheetsRouter.post('/sync', async (req, res) => {
           formatPriceStr(lowestP, curr),
           p.inStock !== false ? 'Dostępny' : 'Brak w magazynie',
           lastCheckedStr,
-          isDrop ? '📉 SPADEK CENY' : 'Stabilna',
+          statusText,
         ];
       }),
     ];

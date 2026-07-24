@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { sheetsRouter } from './server/sheets';
 import { emailRouter } from './server/email';
+import { driveRouter } from './server/drive';
 import { scrapeProductDetails } from './server/scraper';
 import { getAgentState, updateAgentConfig, runServerAgentCheck, startServerBackgroundScheduler } from './server/agentTask';
 
@@ -30,6 +31,7 @@ app.get('/api/health', (_req, res) => {
 // Mount modular Routers
 app.use('/api/sheets', sheetsRouter);
 app.use('/api/email', emailRouter);
+app.use('/api/drive', driveRouter);
 
 // Server-side continuous background agent endpoints
 app.get('/api/agent/state', (_req, res) => {

@@ -343,6 +343,9 @@ export async function scrapeProductDetails(url: string) {
       }
 
       const amzPriceSelectors = [
+        '#corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen',
+        '#corePrice_desktop .a-price:not(.a-text-price) .a-offscreen',
+        '#apex_desktop .a-price:not(.a-text-price) .a-offscreen',
         '#apex_desktop .priceToPay .a-offscreen',
         '#corePrice_desktop .priceToPay .a-offscreen',
         '#corePriceDisplay_desktop_feature_div .priceToPay .a-offscreen',
@@ -357,6 +360,8 @@ export async function scrapeProductDetails(url: string) {
         '#corePrice_feature_div .a-price:not(.a-text-price) .a-offscreen',
         '#price .a-price:not(.a-text-price) .a-offscreen',
         '#buybox .a-price:not(.a-text-price) .a-offscreen',
+        '.a-price.a-size-medium.a-color-price .a-offscreen',
+        '.a-price.a-size-large .a-offscreen',
       ];
 
       for (const sel of amzPriceSelectors) {
@@ -375,8 +380,8 @@ export async function scrapeProductDetails(url: string) {
       }
 
       if (!scrapedPrice || scrapedPrice === 0) {
-        const whole = $clean('.priceToPay .a-price-whole, #corePrice_feature_div .a-price-whole').first().text().trim();
-        const fraction = $clean('.priceToPay .a-price-fraction, #corePrice_feature_div .a-price-fraction').first().text().trim();
+        const whole = $clean('#corePrice_desktop .a-price-whole, #corePriceDisplay_desktop_feature_div .a-price-whole, #apex_desktop .a-price-whole, .a-price:not(.a-text-price) .a-price-whole').first().text().trim();
+        const fraction = $clean('#corePrice_desktop .a-price-fraction, #corePriceDisplay_desktop_feature_div .a-price-fraction, #apex_desktop .a-price-fraction, .a-price:not(.a-text-price) .a-price-fraction').first().text().trim();
         if (whole) {
           const cleanW = whole.replace(/[^\d]/g, '');
           const cleanF = fraction ? fraction.replace(/[^\d]/g, '') : '00';

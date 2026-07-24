@@ -1,11 +1,12 @@
 import React from 'react';
-import { Play, Plus, Clock, Search, Filter, RefreshCw, AlertTriangle, Palette } from 'lucide-react';
+import { Play, Plus, Clock, Search, Filter, RefreshCw, AlertTriangle, Palette, ShieldCheck } from 'lucide-react';
 import { COLOR_BADGES } from '../types';
 
 interface AgentControlPanelProps {
   onRunAgent: () => void;
   isRunning: boolean;
   onOpenAddModal: () => void;
+  onOpenBackupModal: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   selectedColorBadge: string;
@@ -19,6 +20,7 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
   onRunAgent,
   isRunning,
   onOpenAddModal,
+  onOpenBackupModal,
   searchQuery,
   onSearchChange,
   selectedColorBadge,
@@ -57,6 +59,15 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
           >
             <Plus className="w-4 h-4" />
             <span>Dodaj link do produktu</span>
+          </button>
+
+          <button
+            onClick={onOpenBackupModal}
+            className="inline-flex items-center space-x-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-medium px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-sm"
+            title="Kopia zapasowa i przywracanie produktów"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Kopia i Przywracanie</span>
           </button>
 
           {/* Schedule selector */}

@@ -1,0 +1,33 @@
+{
+  "scheduleInterval": "3hr",
+  "lastRunTime": null,
+  "nextRunTime": "2026-07-24T18:19:11.383Z",
+  "isRunning": false,
+  "products": [],
+  "sheetInfo": {
+    "id": "1MNA1dQZLJdEygLdE4HD9mtWUrnhK2EuDguH8R0SI2B4",
+    "name": "Product Price Tracker Output",
+    "url": "https://docs.google.com/spreadsheets/d/1MNA1dQZLJdEygLdE4HD9mtWUrnhK2EuDguH8R0SI2B4/edit",
+    "lastSynced": "2026-07-24T13:41:21.960Z",
+    "autoSync": true,
+    "syncedRowCount": 10
+  },
+  "emailSettings": {
+    "enabled": true,
+    "recipientEmail": "mpdanowscy@gmail.com",
+    "alertOnPriceDrop": true,
+    "alertOnlyOnTargetHit": false,
+    "minDropPercent": 5,
+    "lastEmailSent": "2026-07-22T12:50:44.761Z"
+  },
+  "googleToken": "",
+  "logs": [
+    {
+      "id": "server-init",
+      "timestamp": "2026-07-24T15:19:11.383Z",
+      "type": "info",
+      "message": "Server-side continuous background agent initialized.",
+      "details": "Agent runs persistent checks in cloud server independently of browser open/close state."
+    }
+  ]
+}

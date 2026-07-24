@@ -11,6 +11,7 @@ import { AgentControlPanel } from './components/AgentControlPanel';
 import { ProductCard } from './components/ProductCard';
 import { AddProductModal } from './components/AddProductModal';
 import { PriceHistoryModal } from './components/PriceHistoryModal';
+import { BackupModal } from './components/BackupModal';
 import { GoogleSheetsPanel } from './components/GoogleSheetsPanel';
 import { EmailAlertsPanel } from './components/EmailAlertsPanel';
 import { AgentLogConsole } from './components/AgentLogConsole';
@@ -24,8 +25,18 @@ export default function App() {
 
   // App Data state
   const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('price_tracker_products');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+    try {
+      const saved = localStorage.getItem('price_tracker_products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse saved products:', e);
+    }
+    return [];
   });
 
   const [sheetInfo, setSheetInfo] = useState<GoogleSheetInfo | null>(() => {
@@ -64,6 +75,7 @@ export default function App() {
 
   // Modal & UI states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [historyModalProduct, setHistoryModalProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedColorBadge, setSelectedColorBadge] = useState('all');
@@ -78,10 +90,71 @@ export default function App() {
   const [nextRunSeconds, setNextRunSeconds] = useState(10800);
   const timerRef = useRef<any>(null);
 
-  // Persist products
+  // Persist products and maintain continuous auto-backup
   useEffect(() => {
     localStorage.setItem('price_tracker_products', JSON.stringify(products));
+    if (Array.isArray(products) && products.length > 0) {
+      localStorage.setItem('price_tracker_products_backup', JSON.stringify(products));
+    }
   }, [products]);
+
+  // Auto-backup to Google Drive whenever products are added, removed, or modified
+  useEffect(() => {
+    if (!products) return;
+    const syncTimer = setTimeout(async () => {
+      try {
+        const accessToken = token || (await getAccessToken());
+        if (accessToken) {
+          await fetch('/api/drive/backup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ products, accessToken }),
+          });
+        }
+      } catch (err) {
+        console.warn('Auto Google Drive backup background attempt:', err);
+      }
+    }, 1000);
+
+    return () => clearTimeout(syncTimer);
+  }, [products, token]);
+
+  const handleRestoreProducts = (newProducts: Product[]) => {
+    setProducts(newProducts);
+    localStorage.setItem('price_tracker_products', JSON.stringify(newProducts));
+    localStorage.setItem('price_tracker_products_backup', JSON.stringify(newProducts));
+    addLog('success', `Przywrócono listę produktów (${newProducts.length} pozycji)`);
+
+    // Immediately push to agent server to prevent background state sync from overwriting restored products
+    fetch('/api/agent/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        products: newProducts,
+        scheduleInterval,
+        sheetInfo,
+        emailSettings,
+        googleToken: token,
+      }),
+    }).catch((e) => console.warn('Failed to sync restored products to agent server:', e));
+
+    // Also trigger Google Drive backup if token available
+    getAccessToken().then((accessToken) => {
+      if (accessToken) {
+        fetch('/api/drive/backup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ products: newProducts, accessToken }),
+        }).catch((e) => console.warn('Drive backup after restore failed:', e));
+      }
+    });
+  };
 
   // Persist sheet info
   useEffect(() => {
@@ -158,7 +231,7 @@ export default function App() {
     }
   };
 
-  // Real-time tab recovery listener (re-calculates exact wall-clock time when user unlocks phone/switches to Chrome tab)
+  // Persistent Web Worker Heartbeat Ping & tab recovery listener
   useEffect(() => {
     syncWithServer();
 
@@ -168,10 +241,53 @@ export default function App() {
       }
     };
 
+    // Standard interval backup
+    const heartbeatInterval = setInterval(() => {
+      syncWithServer();
+    }, 45000);
+
+    // Dedicated Web Worker thread for persistent background heartbeat pings (unthrottled by browser tab backgrounding)
+    let worker: Worker | null = null;
+    let workerUrl: string | null = null;
+    try {
+      const workerCode = `
+        let timer = null;
+        self.onmessage = function(e) {
+          if (e.data === 'start') {
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+              postMessage('ping');
+            }, 30000);
+          } else if (e.data === 'stop') {
+            if (timer) clearInterval(timer);
+          }
+        };
+      `;
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      workerUrl = URL.createObjectURL(blob);
+      worker = new Worker(workerUrl);
+      worker.onmessage = (e) => {
+        if (e.data === 'ping') {
+          syncWithServer();
+        }
+      };
+      worker.postMessage('start');
+    } catch (err) {
+      console.warn('Web worker initialization skipped:', err);
+    }
+
     document.addEventListener('visibilitychange', handleTabWakeup);
     window.addEventListener('focus', handleTabWakeup);
 
     return () => {
+      if (worker) {
+        worker.postMessage('stop');
+        worker.terminate();
+      }
+      if (workerUrl) {
+        URL.revokeObjectURL(workerUrl);
+      }
+      clearInterval(heartbeatInterval);
       document.removeEventListener('visibilitychange', handleTabWakeup);
       window.removeEventListener('focus', handleTabWakeup);
     };
@@ -245,9 +361,22 @@ export default function App() {
         if (!emailSettings.recipientEmail && res.user.email) {
           setEmailSettings((prev) => ({ ...prev, recipientEmail: res.user.email || '' }));
         }
+        await fetch('/api/agent-task/sync-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ googleToken: res.accessToken }),
+        });
       }
     } catch (err: any) {
-      addLog('error', 'Google Sign-in failed', err.message);
+      if (
+        err?.code === 'auth/cancelled-popup-request' ||
+        err?.code === 'auth/popup-closed-by-user' ||
+        err?.message?.includes('cancelled-popup-request')
+      ) {
+        console.warn('Sign-in popup cancelled by user');
+      } else {
+        addLog('error', 'Google Sign-in failed', err.message || 'Unknown sign-in error');
+      }
     } finally {
       setIsLoggingIn(false);
     }
@@ -269,7 +398,7 @@ export default function App() {
       const res = await fetch('/api/agent/run', { method: 'POST' });
       if (res.ok) {
         const serverState = await res.json();
-        if (serverState.products) setProducts(serverState.products);
+        if (Array.isArray(serverState.products) && serverState.products.length > 0) setProducts(serverState.products);
         if (serverState.logs) setLogs(serverState.logs);
       } else {
         await runFullAgentCheck();
@@ -513,7 +642,12 @@ export default function App() {
   };
 
   // Sync to Google Sheet
-  const syncToGoogleSheet = async (spreadsheetId: string, currentProducts: Product[], accessToken: string) => {
+  const syncToGoogleSheet = async (
+    spreadsheetId: string,
+    currentProducts: Product[],
+    accessToken: string,
+    allowAutoRetry = true
+  ) => {
     setIsSyncingSheet(true);
     addLog('info', `Syncing ${currentProducts.length} items to Google Sheet...`);
 
@@ -535,6 +669,28 @@ export default function App() {
         if (response.status === 401) {
           setToken(null);
           localStorage.removeItem('google_access_token');
+          localStorage.removeItem('google_access_token_expires_at');
+
+          if (allowAutoRetry) {
+            addLog('info', 'Google Access Token expired. Prompting automatic token renewal...');
+            try {
+              const res = await googleSignIn();
+              if (res) {
+                setUser(res.user);
+                setToken(res.accessToken);
+                // Sync state to server background task
+                await fetch('/api/agent-task/sync-state', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ googleToken: res.accessToken }),
+                });
+                // Auto-retry sync with fresh token
+                return await syncToGoogleSheet(spreadsheetId, currentProducts, res.accessToken, false);
+              }
+            } catch (reauthErr: any) {
+              console.warn('Auto re-authentication skipped:', reauthErr);
+            }
+          }
           throw new Error('Google access token expired or invalid (401). Please click "Sync Now" to sign in again.');
         }
         throw new Error(err.error || `Sync failed with status ${response.status}`);
@@ -706,6 +862,7 @@ export default function App() {
           onRunAgent={runServerAgentRun}
           isRunning={isAgentRunning}
           onOpenAddModal={() => setIsAddModalOpen(true)}
+          onOpenBackupModal={() => setIsBackupModalOpen(true)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           selectedColorBadge={selectedColorBadge}
@@ -806,12 +963,20 @@ export default function App() {
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
               Add your first online store product URL to start monitoring prices, syncing with Google Sheets, and receiving Gmail alerts.
             </p>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm cursor-pointer"
-            >
-              Add Product Link
-            </button>
+            <div className="flex items-center justify-center space-x-3">
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm cursor-pointer"
+              >
+                Dodaj produkt
+              </button>
+              <button
+                onClick={() => setIsBackupModalOpen(true)}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+              >
+                Przywróć z kopii zapasowej
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
@@ -845,6 +1010,14 @@ export default function App() {
       <PriceHistoryModal
         product={historyModalProduct}
         onClose={() => setHistoryModalProduct(null)}
+      />
+
+      {/* Backup and Restore Modal */}
+      <BackupModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        products={products}
+        onRestoreProducts={handleRestoreProducts}
       />
 
       {/* Footer */}

@@ -49,7 +49,7 @@ export interface AgentServerState {
 
 const DATA_FILE = path.join(process.cwd(), 'agent_server_state.json');
 
-// Default initial state
+// Default initial state (no mock/default products)
 let state: AgentServerState = {
   scheduleInterval: '3hr',
   lastRunTime: null,
@@ -84,6 +84,9 @@ function loadState() {
       const raw = fs.readFileSync(DATA_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
       state = { ...state, ...parsed };
+      if (!Array.isArray(state.products)) {
+        state.products = [];
+      }
       console.log('Loaded persistent agent server state from disk.');
     }
   } catch (err) {
@@ -102,11 +105,16 @@ function saveState() {
 loadState();
 
 export function getAgentState(): AgentServerState {
+  if (!Array.isArray(state.products)) {
+    state.products = [];
+  }
   return state;
 }
 
 export function updateAgentConfig(partialState: Partial<AgentServerState>): AgentServerState {
-  if (partialState.products) state.products = partialState.products;
+  if (Array.isArray(partialState.products)) {
+    state.products = partialState.products;
+  }
   if (partialState.scheduleInterval) {
     const intervalChanged = state.scheduleInterval !== partialState.scheduleInterval;
     state.scheduleInterval = partialState.scheduleInterval;

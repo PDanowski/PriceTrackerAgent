@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileSpreadsheet as SheetIcon, RefreshCw, ExternalLink, PlusCircle, CheckCircle2, AlertCircle, HardDrive } from 'lucide-react';
 import { GoogleSheetInfo } from '../types';
+import { getAccessToken } from '../auth';
 
 interface GoogleSheetsPanelProps {
   sheetInfo: GoogleSheetInfo | null;
@@ -30,7 +31,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
   const [showDriveDropdown, setShowDriveDropdown] = useState(false);
 
   const handleFetchDriveSheets = async () => {
-    let tok = localStorage.getItem('google_access_token');
+    let tok = await getAccessToken();
     if (!userTokenAvailable || !tok) {
       onPromptSignIn();
       return;
@@ -46,6 +47,8 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
         const data = await response.json();
         setDriveSheets(data.files || []);
         setShowDriveDropdown(true);
+      } else if (response.status === 401) {
+        onPromptSignIn();
       }
     } catch (err) {
       console.error('Failed to load drive sheets:', err);
