@@ -3,6 +3,12 @@ export interface PriceHistoryPoint {
   price: number;
 }
 
+export interface CheckProgress {
+  current: number;
+  total: number;
+  currentTitle?: string;
+}
+
 export type ColorBadgeOption = 'blue' | 'emerald' | 'purple' | 'amber' | 'rose' | 'indigo' | 'cyan' | 'slate';
 
 export interface ColorBadgeConfig {

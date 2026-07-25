@@ -9,6 +9,52 @@ export function getGeminiClient() {
   return new GoogleGenAI({ apiKey });
 }
 
+// Helper to parse price strings safely with support for European (1.499,00 zł) and US (1,499.00 $) formats
+export function parsePriceString(raw: string | number): number {
+  if (typeof raw === 'number') return isNaN(raw) ? 0 : raw;
+  if (!raw) return 0;
+
+  let s = String(raw).trim();
+  s = s.replace(/[^\d\,\.\s]/g, '').trim();
+  if (!s) return 0;
+
+  if (s.includes('.') && s.includes(',')) {
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    if (lastComma > lastDot) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/\,/g, '');
+    }
+  } else if (s.includes(',')) {
+    const parts = s.split(',');
+    if (parts.length === 2) {
+      if (parts[1].length === 3 && parts[0].length <= 3 && !s.includes(' ')) {
+        s = parts.join('');
+      } else {
+        s = parts[0].replace(/\s/g, '') + '.' + parts[1];
+      }
+    } else {
+      s = s.replace(/\,/g, '');
+    }
+  } else if (s.includes('.')) {
+    const parts = s.split('.');
+    if (parts.length === 2) {
+      if (parts[1].length === 3 && parts[0].length <= 3) {
+        s = parts.join('');
+      } else {
+        s = parts[0].replace(/\s/g, '') + '.' + parts[1];
+      }
+    } else {
+      s = s.replace(/\./g, '');
+    }
+  }
+
+  s = s.replace(/\s/g, '');
+  const val = parseFloat(s);
+  return isNaN(val) ? 0 : val;
+}
+
 // Helper to extract clean human-readable title from URL path slug
 export function cleanTitleFromUrl(urlStr: string): string {
   try {
@@ -47,9 +93,25 @@ export function cleanTitleFromUrl(urlStr: string): string {
       }
     }
 
+    // Handle Adidas product URL slugs (e.g. /buty-cloudfoam-flex-rapidfit/HP6993.html)
+    if (u.hostname.includes('adidas.')) {
+      const segs = u.pathname.split('/').filter(Boolean);
+      if (segs.length >= 2) {
+        const titleSeg = segs[segs.length - 2];
+        const cleaned = decodeURIComponent(titleSeg)
+          .replace(/\.html?$/i, '')
+          .replace(/[-_]/g, ' ')
+          .trim();
+        if (cleaned && cleaned.length > 2 && !/^\d+$/.test(cleaned)) {
+          return cleaned.split(' ').map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : '')).join(' ');
+        }
+      }
+    }
+
     const lastSeg = u.pathname.split('/').filter(Boolean).pop() || '';
     // Remove trailing numeric offer IDs
     const cleanedSlug = lastSeg
+      .replace(/\.html?$/i, '')
       .replace(/[-_]\d{7,}$/g, '')
       .replace(/[-_]/g, ' ')
       .trim();
@@ -71,66 +133,128 @@ export async function scrapeProductDetails(url: string) {
     throw new Error('Invalid URL format');
   }
 
-  // Attempt to fetch product HTML with realistic browser headers
-  let html = '';
-  let fetchError = '';
+  const targetFetchUrl = url;
   const isAmazon = parsedUrl.hostname.includes('amazon.');
-  let targetFetchUrl = parsedUrl.href;
-  if (isAmazon) {
-    const asinMatch = parsedUrl.pathname.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
-    if (asinMatch && asinMatch[1]) {
-      targetFetchUrl = `https://${parsedUrl.hostname}/dp/${asinMatch[1]}`;
-    }
-  }
 
-  try {
-    const getHeaders = (uaType: number) => ({
-      'User-Agent': uaType === 0
-        ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-        : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-      'Accept-Language': isAmazon ? 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7' : 'en-US,en;q=0.9',
+  // User-agent pool and header generator for avoiding bot blocks
+  const USER_AGENT_POOL = [
+    {
+      ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      platform: '"Windows"',
+      secUa: '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
+      mobile: '?0',
+    },
+    {
+      ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      platform: '"macOS"',
+      secUa: '"Chromium";v="125", "Not.A/Brand";v="24", "Google Chrome";v="125"',
+      mobile: '?0',
+    },
+    {
+      ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0',
+      platform: '"Windows"',
+      secUa: '',
+      mobile: '?0',
+    },
+    {
+      ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
+      platform: '"macOS"',
+      secUa: '',
+      mobile: '?0',
+    },
+    {
+      ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+      platform: '"iOS"',
+      secUa: '',
+      mobile: '?1',
+    },
+    {
+      ua: 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.113 Mobile Safari/537.36',
+      platform: '"Android"',
+      secUa: '"Chromium";v="125", "Not.A/Brand";v="24", "Google Chrome";v="125"',
+      mobile: '?1',
+    },
+  ];
+
+  const getRandomHeaders = (uaIndex: number) => {
+    const agentObj = USER_AGENT_POOL[(uaIndex + Math.floor(Math.random() * USER_AGENT_POOL.length)) % USER_AGENT_POOL.length];
+    const headers: Record<string, string> = {
+      'User-Agent': agentObj.ua,
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': isAmazon ? 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7' : 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache',
-      'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124"',
-      'Sec-Ch-Ua-Mobile': '?0',
-      'Sec-Ch-Ua-Platform': '"Windows"',
       'Sec-Fetch-Dest': 'document',
       'Sec-Fetch-Mode': 'navigate',
       'Sec-Fetch-Site': 'none',
       'Sec-Fetch-User': '?1',
       'Upgrade-Insecure-Requests': '1',
-    });
-
-    let response = await fetch(targetFetchUrl, {
-      headers: getHeaders(0),
-      redirect: 'follow',
-    });
-
-    if (response.ok) {
-      html = await response.text();
+    };
+    if (agentObj.secUa) {
+      headers['Sec-Ch-Ua'] = agentObj.secUa;
+      headers['Sec-Ch-Ua-Mobile'] = agentObj.mobile;
+      headers['Sec-Ch-Ua-Platform'] = agentObj.platform;
     }
+    return headers;
+  };
 
-    if (isAmazon && (!response.ok || !html || html.includes('Captcha') || html.includes('Robot Check') || html.length < 1500)) {
-      await new Promise((r) => setTimeout(r, 350));
-      const retryRes = await fetch(targetFetchUrl, {
-        headers: getHeaders(1),
+  let html = '';
+  let fetchError = '';
+  let isAccessDeniedOrBlocked = false;
+
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, 250 + Math.random() * 250));
+      }
+
+      const headers = getRandomHeaders(attempt);
+      const response = await fetch(targetFetchUrl, {
+        headers,
         redirect: 'follow',
       });
-      if (retryRes.ok) {
-        const retryHtml = await retryRes.text();
-        if (retryHtml && retryHtml.length > 1500 && !retryHtml.includes('Captcha')) {
-          html = retryHtml;
-          fetchError = '';
-        }
-      }
-    }
 
-    if (!response.ok && !html) {
-      fetchError = `HTTP status ${response.status}`;
+      if (response.status === 403 || response.status === 401 || response.status === 429 || response.status === 503) {
+        isAccessDeniedOrBlocked = true;
+        fetchError = `HTTP ${response.status} Access Denied / Anti-bot`;
+        continue;
+      }
+
+      if (response.ok) {
+        const fetchedHtml = await response.text();
+        const lowerHtml = fetchedHtml.toLowerCase();
+        const isBotCheckPage =
+          fetchedHtml.length < 500 ||
+          lowerHtml.includes('<title>just a moment...</title>') ||
+          lowerHtml.includes('<title>attention required!') ||
+          lowerHtml.includes('<title>access denied</title>') ||
+          lowerHtml.includes('<title>robot check</title>') ||
+          (fetchedHtml.length < 15000 &&
+            (lowerHtml.includes('cf-browser-verification') ||
+             lowerHtml.includes('cf-challenge') ||
+             lowerHtml.includes('cdn-cgi/challenge-platform') ||
+             lowerHtml.includes('__cf_chl_opt') ||
+             lowerHtml.includes('g-recaptcha') ||
+             lowerHtml.includes('captcha') ||
+             lowerHtml.includes('enable javascript')));
+
+        if (isBotCheckPage) {
+          isAccessDeniedOrBlocked = true;
+          fetchError = 'Bot detection / Captcha page returned';
+          continue;
+        }
+
+        html = fetchedHtml;
+        fetchError = '';
+        isAccessDeniedOrBlocked = false;
+        break; // Successfully fetched product page HTML
+      } else {
+        fetchError = `HTTP status ${response.status}`;
+      }
+    } catch (err: any) {
+      fetchError = err.message || 'Network fetch failed';
     }
-  } catch (err: any) {
-    fetchError = err.message || 'Network fetch failed';
   }
 
   let scrapedTitle = '';
@@ -262,32 +386,63 @@ export async function scrapeProductDetails(url: string) {
     $clean('script[type="application/ld+json"]').each((_, el) => {
       try {
         const content = $clean(el).contents().text();
+        if (!content) return;
         const json = JSON.parse(content);
-        const items = Array.isArray(json) ? json : [json];
-        for (const item of items) {
-          if (item['@type'] === 'Product' || item['@type'] === 'http://schema.org/Product') {
-            if (item.name) scrapedTitle = item.name;
-            if (item.image) {
+        
+        const processLdNode = (item: any) => {
+          if (!item || typeof item !== 'object') return;
+
+          if (item['@graph'] && Array.isArray(item['@graph'])) {
+            item['@graph'].forEach(processLdNode);
+          }
+
+          const rawTypes = item['@type'];
+          const types = Array.isArray(rawTypes) ? rawTypes : [rawTypes];
+          if (types.some((t: any) => typeof t === 'string' && (t === 'Product' || t.includes('Product')))) {
+            if (item.name && (!scrapedTitle || scrapedTitle.length < 3)) {
+              scrapedTitle = item.name;
+            }
+            if (item.image && !scrapedImage) {
               const rawImg = Array.isArray(item.image)
                 ? item.image[0]
                 : typeof item.image === 'object'
-                ? item.image.url
+                ? item.image.url || item.image.contentUrl
                 : item.image;
               scrapedImage = resolveUrl(rawImg);
             }
             const offers = item.offers;
             if (offers) {
-              const offer = Array.isArray(offers) ? offers[0] : offers;
-              if (offer.price) scrapedPrice = parseFloat(offer.price);
-              if (offer.priceCurrency) {
-                const pc = offer.priceCurrency.trim();
-                scrapedCurrency = pc === 'PLN' ? 'zł' : pc === 'EUR' ? '€' : pc === 'USD' ? '$' : pc === 'GBP' ? '£' : pc;
-              }
-              if (offer.availability) {
-                scrapedInStock = offer.availability.includes('InStock');
+              const offerList = Array.isArray(offers)
+                ? offers
+                : offers.offers && Array.isArray(offers.offers)
+                ? offers.offers
+                : [offers];
+
+              for (const offer of offerList) {
+                if (!offer) continue;
+                const rawPrice = offer.price ?? offer.lowPrice ?? offer.highPrice ?? offer.priceAmount;
+                if (rawPrice !== undefined && rawPrice !== null && (!scrapedPrice || scrapedPrice === 0)) {
+                  const parsedP = parsePriceString(rawPrice);
+                  if (parsedP > 0) {
+                    scrapedPrice = parsedP;
+                  }
+                }
+                if (offer.priceCurrency && !scrapedCurrency) {
+                  const pc = String(offer.priceCurrency).trim();
+                  scrapedCurrency = pc === 'PLN' ? 'zł' : pc === 'EUR' ? '€' : pc === 'USD' ? '$' : pc === 'GBP' ? '£' : pc;
+                }
+                if (offer.availability) {
+                  scrapedInStock = String(offer.availability).includes('InStock');
+                }
               }
             }
           }
+        };
+
+        if (Array.isArray(json)) {
+          json.forEach(processLdNode);
+        } else {
+          processLdNode(json);
         }
       } catch {}
     });
@@ -320,6 +475,7 @@ export async function scrapeProductDetails(url: string) {
       const ogPrice =
         $clean('meta[property="product:price:amount"]').attr('content') ||
         $clean('meta[property="og:price:amount"]').attr('content') ||
+        $clean('meta[name="twitter:data1"]').attr('content') ||
         $clean('meta[itemprop="price"]').attr('content') ||
         $clean('[itemprop="price"]').attr('content') ||
         $clean('[itemprop="price"]').attr('data-price-amount') ||
@@ -327,8 +483,8 @@ export async function scrapeProductDetails(url: string) {
       if (ogPrice) {
         const match = ogPrice.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
         if (match && match[1]) {
-          const parsedVal = parseFloat(match[1].replace(/\s/g, '').replace(',', '.'));
-          if (!isNaN(parsedVal) && parsedVal > 0) {
+          const parsedVal = parsePriceString(match[1]);
+          if (parsedVal > 0) {
             scrapedPrice = parsedVal;
           }
         }
@@ -336,8 +492,63 @@ export async function scrapeProductDetails(url: string) {
     }
 
     // 3. Cheerio DOM selector heuristics
+    if (parsedUrl.hostname.includes('adidas.')) {
+      const adzTitle = $clean('[data-auto-id="product-title"], h1.product-title, h1').first().text().trim();
+      if (adzTitle && adzTitle.length > 2) {
+        scrapedTitle = adzTitle;
+      }
+
+      const adidasPriceSelectors = [
+        '[data-auto-id="product-price"]',
+        '[data-auto-id="gl-price-item"]',
+        '.gl-price-item--sale',
+        '.gl-price-item',
+        '[data-testid="product-price"]',
+        '.pd-price',
+        '.product-price',
+        '.price___1Tf20',
+      ];
+      for (const sel of adidasPriceSelectors) {
+        if (scrapedPrice > 0) break;
+        $clean(sel).each((_, el) => {
+          const txt = $clean(el).text().trim();
+          if (txt) {
+            const m = txt.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
+            if (m && m[1]) {
+              const p = parsePriceString(m[1]);
+              if (p > 0) {
+                scrapedPrice = p;
+                return false;
+              }
+            }
+          }
+        });
+      }
+
+      if (!scrapedPrice || scrapedPrice === 0) {
+        const adidasRegexes = [
+          /"unit_sale_price"\s*:\s*\[?"?([\d\.\,]+)"?/i,
+          /"sale_price"\s*:\s*"?([\d\.\,]+)"?/i,
+          /"salePrice"\s*:\s*"?([\d\.\,]+)"?/i,
+          /"priceValue"\s*:\s*"?([\d\.\,]+)"?/i,
+          /"product_unit_sale_price"\s*:\s*"?([\d\.\,]+)"?/i,
+          /"price"\s*:\s*"?([\d\.\,]+)"?/i,
+        ];
+        for (const reg of adidasRegexes) {
+          const match = html.match(reg);
+          if (match && match[1]) {
+            const val = parsePriceString(match[1]);
+            if (val > 0 && val < 100000) {
+              scrapedPrice = val;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     if (parsedUrl.hostname.includes('amazon.')) {
-      const amzTitle = $clean('#productTitle').first().text().trim();
+      const amzTitle = $clean('#productTitle, #title, h1').first().text().trim();
       if (amzTitle && amzTitle.length > 2) {
         scrapedTitle = amzTitle;
       }
@@ -346,6 +557,9 @@ export async function scrapeProductDetails(url: string) {
         '#corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen',
         '#corePrice_desktop .a-price:not(.a-text-price) .a-offscreen',
         '#apex_desktop .a-price:not(.a-text-price) .a-offscreen',
+        '#corePrice_mobile_feature_div .a-price:not(.a-text-price) .a-offscreen',
+        '#corePriceDisplay_mobile_feature_div .a-price:not(.a-text-price) .a-offscreen',
+        '#apex_mobile_feature_div .a-price:not(.a-text-price) .a-offscreen',
         '#apex_desktop .priceToPay .a-offscreen',
         '#corePrice_desktop .priceToPay .a-offscreen',
         '#corePriceDisplay_desktop_feature_div .priceToPay .a-offscreen',
@@ -362,6 +576,8 @@ export async function scrapeProductDetails(url: string) {
         '#buybox .a-price:not(.a-text-price) .a-offscreen',
         '.a-price.a-size-medium.a-color-price .a-offscreen',
         '.a-price.a-size-large .a-offscreen',
+        '.a-price:not(.a-text-price) .a-offscreen',
+        '.a-color-price',
       ];
 
       for (const sel of amzPriceSelectors) {
@@ -369,9 +585,8 @@ export async function scrapeProductDetails(url: string) {
         if (txt) {
           const match = txt.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
           if (match && match[1]) {
-            const cleanedNumStr = match[1].replace(/\s/g, '').replace(',', '.');
-            const parsedVal = parseFloat(cleanedNumStr);
-            if (!isNaN(parsedVal) && parsedVal > 0) {
+            const parsedVal = parsePriceString(match[1]);
+            if (parsedVal > 0) {
               scrapedPrice = parsedVal;
               break;
             }
@@ -380,15 +595,51 @@ export async function scrapeProductDetails(url: string) {
       }
 
       if (!scrapedPrice || scrapedPrice === 0) {
-        const whole = $clean('#corePrice_desktop .a-price-whole, #corePriceDisplay_desktop_feature_div .a-price-whole, #apex_desktop .a-price-whole, .a-price:not(.a-text-price) .a-price-whole').first().text().trim();
-        const fraction = $clean('#corePrice_desktop .a-price-fraction, #corePriceDisplay_desktop_feature_div .a-price-fraction, #apex_desktop .a-price-fraction, .a-price:not(.a-text-price) .a-price-fraction').first().text().trim();
-        if (whole) {
-          const cleanW = whole.replace(/[^\d]/g, '');
-          const cleanF = fraction ? fraction.replace(/[^\d]/g, '') : '00';
-          if (cleanW) {
-            const p = parseFloat(`${cleanW}.${cleanF}`);
-            if (!isNaN(p) && p > 0) {
-              scrapedPrice = p;
+        $clean('.a-price:not(.a-text-price)').each((_, el) => {
+          if (scrapedPrice > 0) return;
+          const $el = $clean(el);
+          const off = $el.find('.a-offscreen').first().text().trim();
+          if (off) {
+            const m = off.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
+            if (m && m[1]) {
+              const p = parsePriceString(m[1]);
+              if (p > 0) {
+                scrapedPrice = p;
+                return;
+              }
+            }
+          }
+          const whole = $el.find('.a-price-whole').first().text().trim();
+          const fraction = $el.find('.a-price-fraction').first().text().trim();
+          if (whole) {
+            const cleanW = whole.replace(/[^\d]/g, '');
+            const cleanF = fraction ? fraction.replace(/[^\d]/g, '') : '00';
+            if (cleanW) {
+              const p = parsePriceString(`${cleanW}.${cleanF}`);
+              if (p > 0) {
+                scrapedPrice = p;
+              }
+            }
+          }
+        });
+      }
+
+      if (!scrapedPrice || scrapedPrice === 0) {
+        const jsonPriceRegexes = [
+          /"priceAmount"\s*:\s*([\d\.]+)/,
+          /"buyingPrice"\s*:\s*([\d\.]+)/,
+          /"priceToPay"\s*:\s*([\d\.]+)/,
+          /"displayPrice"\s*:\s*"([^"]+)"/,
+          /"price"\s*:\s*([\d\.]+)/,
+          /"amount"\s*:\s*([\d\.]+)/,
+        ];
+        for (const reg of jsonPriceRegexes) {
+          const match = html.match(reg);
+          if (match && match[1]) {
+            const val = parsePriceString(match[1]);
+            if (val > 0 && val < 500000) {
+              scrapedPrice = val;
+              break;
             }
           }
         }
@@ -425,9 +676,8 @@ export async function scrapeProductDetails(url: string) {
         if (txt) {
           const match = txt.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)\s*([a-zA-Z\$€£złPLN¥Kč]+)?/i);
           if (match && match[1] && (!scrapedPrice || scrapedPrice === 0)) {
-            const cleanedNumStr = match[1].replace(/\s/g, '').replace(',', '.');
-            const parsedVal = parseFloat(cleanedNumStr);
-            if (!isNaN(parsedVal) && parsedVal > 0) {
+            const parsedVal = parsePriceString(match[1]);
+            if (parsedVal > 0) {
               scrapedPrice = parsedVal;
             }
           }
@@ -547,14 +797,21 @@ Return ONLY valid JSON.`;
       .trim();
   }
 
-  const isBotBlocked = !!fetchError || !html || html.length < 500 || (scrapedPrice === 0 && (html.includes('captcha') || html.includes('Robot Check')));
+  if (scrapedTitle && (scrapedTitle.includes('| adidas') || scrapedTitle.includes('- adidas') || scrapedTitle.includes('adidas Poland') || scrapedTitle.includes('adidas PL'))) {
+    scrapedTitle = scrapedTitle
+      .replace(/\s*\|\s*adidas.*$/i, '')
+      .replace(/\s*-\s*adidas.*$/i, '')
+      .replace(/^adidas\s+/i, '')
+      .trim();
+  }
+
+  const isBotBlocked = isAccessDeniedOrBlocked || !!fetchError || !html || html.length < 500 || (scrapedPrice === 0 && (html.toLowerCase().includes('captcha') || html.toLowerCase().includes('robot check')));
   let fetchedFromCeneo = false;
-  let finalTrackedUrl = parsedUrl.href;
-  let overrodeUrlToCeneo = false;
+  const finalTrackedUrl = parsedUrl.href;
 
   const needsPriceFallback = !scrapedPrice || scrapedPrice === 0;
 
-  // ONLY attempt searchCeneoFallback if we don't have a valid scraped price yet!
+  // ONLY attempt searchCeneoFallback if primary site price scraping failed AND genuine access denied / bot block occurred
   if (needsPriceFallback && (isAllegroUrl || isAmazonUrl || isBotBlocked || !isCeneoUrl)) {
     let ceneoResult = await searchCeneoFallback(scrapedTitle);
 
@@ -580,23 +837,14 @@ Return ONLY valid JSON.`;
           scrapedTitle = ceneoResult.title;
         }
       }
-
-      if (ceneoResult.ceneoUrl) {
-        finalTrackedUrl = ceneoResult.ceneoUrl;
-        if (isAllegroUrl || isAmazonUrl) {
-          overrodeUrlToCeneo = true;
-        }
-      }
     }
   }
 
   const needsManualPrice = !scrapedPrice || scrapedPrice === 0;
 
   let scrapeWarning: string | undefined;
-  if (overrodeUrlToCeneo) {
-    scrapeWarning = `Serwis ${isAllegroUrl ? 'Allegro' : 'sklepu'} stosuje ochronę anty-bot. Cenę (${scrapedPrice.toFixed(2)} zł) oraz adres do śledzenia przełączono na porównywarkę Ceneo (${finalTrackedUrl}).`;
-  } else if (fetchedFromCeneo && !isCeneoUrl) {
-    scrapeWarning = `Nie udało się bezpośrednio odczytać ceny ze strony sklepu. Pobrano cenę (${scrapedPrice.toFixed(2)} ${scrapedCurrency || 'zł'}) z porównywarki Ceneo dla "${scrapedTitle}".`;
+  if (fetchedFromCeneo && !isCeneoUrl) {
+    scrapeWarning = `Nie udało się bezpośrednio odczytać ceny ze strony sklepu. Pobrano szacowaną cenę (${scrapedPrice.toFixed(2)} ${scrapedCurrency || 'zł'}) z Ceneo dla "${scrapedTitle}". Adres strony pozostał oryginalny.`;
   } else if (needsManualPrice) {
     scrapeWarning = isAllegroUrl
       ? 'Serwis Allegro stosuje ochronę anty-bot, a Ceneo nie zwróciło cen. Wpisz cenę ręcznie.'
@@ -616,6 +864,6 @@ Return ONLY valid JSON.`;
     needsManualPrice,
     scrapeWarning,
     fetchedFromCeneo,
-    overrodeUrlToCeneo,
+    overrodeUrlToCeneo: false,
   };
 }

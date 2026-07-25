@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { parsePriceString } from './scraper';
 
 const ACCESSORY_WORDS = ['etui', 'case', 'pokrowiec', 'szkło', 'folia', 'kabel', 'pasek', 'ładowarka', 'adapter', 'uchwyt', 'obudowa', 'osłona', 'przejściówka', 'stojak', 'bateria', 'poduszka', 'stelaż'];
 
@@ -215,9 +216,8 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
             const priceMatch = cleanSnippetText.match(/(?:od\s*)?(\d+[\d\s,]*[\.,]?\d*)\s*(?:zł|PLN)/i);
             if (!priceMatch) return;
 
-            const rawNum = priceMatch[1].replace(/\s+/g, '').replace(',', '.');
-            const val = parseFloat(rawNum);
-            if (isNaN(val) || val <= 0 || val > 100000) return;
+            const val = parsePriceString(priceMatch[1]);
+            if (val <= 0 || val > 100000) return;
 
             let score = 0;
             const combinedLower = combined.toLowerCase();
@@ -305,9 +305,8 @@ export async function searchCeneoFallback(queryTitle: string): Promise<{ price: 
             const priceMatch = cleanSnippetText.match(/(?:od\s*)?(\d+[\d\s,]*[\.,]?\d*)\s*(?:zł|PLN)/i);
             if (!priceMatch) return;
 
-            const rawNum = priceMatch[1].replace(/\s+/g, '').replace(',', '.');
-            const val = parseFloat(rawNum);
-            if (isNaN(val) || val <= 0 || val > 100000) return;
+            const val = parsePriceString(priceMatch[1]);
+            if (val <= 0 || val > 100000) return;
 
             let score = 0;
             const combinedLower = combined.toLowerCase();

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Play, Plus, Clock, Search, Filter, RefreshCw, AlertTriangle, Palette, ShieldCheck } from 'lucide-react';
-import { COLOR_BADGES } from '../types';
+import { Play, Plus, Clock, Search, ShieldCheck, Loader2 } from 'lucide-react';
+import { COLOR_BADGES, CheckProgress } from '../types';
 
 interface AgentControlPanelProps {
   onRunAgent: () => void;
   isRunning: boolean;
+  checkProgress?: CheckProgress | null;
   onOpenAddModal: () => void;
   onOpenBackupModal: () => void;
   searchQuery: string;
@@ -19,6 +20,7 @@ interface AgentControlPanelProps {
 export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
   onRunAgent,
   isRunning,
+  checkProgress,
   onOpenAddModal,
   onOpenBackupModal,
   searchQuery,
@@ -49,8 +51,18 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
             disabled={isRunning}
             className="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed text-sm"
           >
-            <Play className={`w-4 h-4 fill-white ${isRunning ? 'animate-bounce' : ''}`} />
-            <span>{isRunning ? 'Uruchamianie sprawdzania...' : 'Uruchom sprawdzanie cen'}</span>
+            {isRunning ? (
+              <Loader2 className="w-4 h-4 animate-spin text-white" />
+            ) : (
+              <Play className="w-4 h-4 fill-white" />
+            )}
+            <span>
+              {isRunning
+                ? checkProgress
+                  ? `Sprawdzanie (${checkProgress.current}/${checkProgress.total} - ${Math.round((Math.min(checkProgress.current, checkProgress.total) / (checkProgress.total || 1)) * 100)}%)`
+                  : 'Uruchamianie sprawdzania...'
+                : 'Uruchom sprawdzanie cen'}
+            </span>
           </button>
 
           <button

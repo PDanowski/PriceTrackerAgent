@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from 'firebase/auth';
 import { initAuth, googleSignIn, logout, getAccessToken } from './auth';
-import { Product, GoogleSheetInfo, EmailSettings, AgentLog, ColorBadgeOption } from './types';
+import { Product, GoogleSheetInfo, EmailSettings, AgentLog, ColorBadgeOption, CheckProgress } from './types';
 import { INITIAL_PRODUCTS } from './mockData';
 import { getSecondsUntilNextNoonCET } from './utils/timeUtils';
 import { recordDailyLowestPrice, buildPriceDropEmailHtml } from './utils/priceTrackerUtils';
 import { Header } from './components/Header';
 import { GoogleAuthBanner } from './components/GoogleAuthBanner';
 import { AgentControlPanel } from './components/AgentControlPanel';
+import { CheckProgressBar } from './components/CheckProgressBar';
 import { ProductCard } from './components/ProductCard';
 import { AddProductModal } from './components/AddProductModal';
 import { PriceHistoryModal } from './components/PriceHistoryModal';
@@ -80,6 +81,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedColorBadge, setSelectedColorBadge] = useState('all');
   const [isAgentRunning, setIsAgentRunning] = useState(false);
+  const isAgentRunningRef = useRef(false);
+  const [checkProgress, setCheckProgress] = useState<CheckProgress | null>(null);
   const [checkingProductId, setCheckingProductId] = useState<string | null>(null);
   const [isCreatingSheet, setIsCreatingSheet] = useState(false);
   const [isSyncingSheet, setIsSyncingSheet] = useState(false);
@@ -172,6 +175,7 @@ export default function App() {
 
   // Push latest configuration to continuous background agent server
   useEffect(() => {
+    if (isAgentRunningRef.current) return;
     fetch('/api/agent/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -206,6 +210,7 @@ export default function App() {
 
   // Sync state with server
   const syncWithServer = async () => {
+    if (isAgentRunningRef.current) return;
     try {
       const res = await fetch('/api/agent/state');
       if (res.ok) {
@@ -218,9 +223,11 @@ export default function App() {
         }
         if (serverState.nextRunTime) {
           const targetMs = new Date(serverState.nextRunTime).getTime();
-          targetRunTimeRef.current = targetMs;
-          const remSecs = Math.max(0, Math.ceil((targetMs - Date.now()) / 1000));
-          setNextRunSeconds(remSecs);
+          if (targetMs > Date.now()) {
+            targetRunTimeRef.current = targetMs;
+            const remSecs = Math.max(0, Math.ceil((targetMs - Date.now()) / 1000));
+            setNextRunSeconds(remSecs);
+          }
         }
         if (serverState.scheduleInterval) {
           setScheduleInterval(serverState.scheduleInterval);
@@ -325,6 +332,8 @@ export default function App() {
     }
 
     timerRef.current = setInterval(() => {
+      if (isAgentRunningRef.current) return;
+
       const remainingSecs = Math.max(0, Math.ceil((targetRunTimeRef.current - Date.now()) / 1000));
       setNextRunSeconds(remainingSecs);
 
@@ -389,127 +398,174 @@ export default function App() {
     addLog('info', 'Signed out from Google Account');
   };
 
-  // Trigger agent check on server (with client fallback)
+  // Trigger agent check on server / client with progress tracking
   const runServerAgentRun = async () => {
-    if (isAgentRunning) return;
-    setIsAgentRunning(true);
-    addLog('info', 'Triggering background agent price check on cloud server...');
-    try {
-      const res = await fetch('/api/agent/run', { method: 'POST' });
-      if (res.ok) {
-        const serverState = await res.json();
-        if (Array.isArray(serverState.products) && serverState.products.length > 0) setProducts(serverState.products);
-        if (serverState.logs) setLogs(serverState.logs);
-      } else {
-        await runFullAgentCheck();
-      }
-    } catch (err: any) {
-      await runFullAgentCheck();
-    } finally {
-      setIsAgentRunning(false);
-    }
+    await runFullAgentCheck();
   };
 
-  // Run full price check agent loop
+  // Run full price check agent loop with progress bar updates
   const runFullAgentCheck = async () => {
-    if (isAgentRunning) return;
+    if (isAgentRunningRef.current) {
+      console.warn('Agent check already in progress. Skipping duplicate run.');
+      return;
+    }
+    if (!products || products.length === 0) {
+      addLog('info', 'Brak produktów do sprawdzenia.');
+      return;
+    }
+
+    isAgentRunningRef.current = true;
     setIsAgentRunning(true);
-    addLog('info', `Starting agent execution. Checking prices for ${products.length} product links...`);
+    const totalCount = products.length;
+    setCheckProgress({ current: 0, total: totalCount, currentTitle: products[0]?.title });
+    addLog('info', `Rozpoczynanie sprawdzania cen dla ${totalCount} produktów z listy...`);
 
     let priceDropsDetected: Array<{ title: string; oldPrice: number; newPrice: number; currency: string; url: string }> = [];
     const updatedProducts = [...products];
 
-    for (let i = 0; i < updatedProducts.length; i++) {
-      const prod = updatedProducts[i];
-      try {
-        addLog('info', `Extracting main product price for "${prod.title}"...`);
-        const response = await fetch('/api/scrape', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: prod.url }),
+    try {
+      for (let i = 0; i < updatedProducts.length; i++) {
+        const prod = updatedProducts[i];
+        setCheckingProductId(prod.id);
+        setCheckProgress({
+          current: i,
+          total: totalCount,
+          currentTitle: prod.title,
         });
 
-        if (response.ok) {
-          const scraped = await response.json();
-          const newPrice = (scraped.price && scraped.price > 0) ? scraped.price : prod.currentPrice;
+        try {
+          addLog('info', `Sprawdzanie ceny [${i + 1}/${totalCount}]: "${prod.title}"...`);
 
-          // Track ALL prices (calculate price drop percentage vs previous day / previous recorded price)
-          const basePreviousPrice = prod.previousPrice || prod.currentPrice;
-          const dropAmount = basePreviousPrice - newPrice;
-          const dropPercent = basePreviousPrice > 0 ? (dropAmount / basePreviousPrice) * 100 : 0;
+          // 12-second per-product scrape timeout so slow sites don't freeze the progress bar
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-          // 5% Threshold rule enforcement for Gmail notification
-          const meetsThreshold = dropPercent >= (emailSettings.minDropPercent || 5);
-
-          if (meetsThreshold) {
-            priceDropsDetected.push({
-              title: prod.title,
-              oldPrice: basePreviousPrice,
-              newPrice,
-              currency: prod.currency,
-              url: prod.url,
+          let response: Response | null = null;
+          try {
+            response = await fetch('/api/scrape', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: prod.url }),
+              signal: controller.signal,
             });
-            addLog(
-              'success',
-              `🔔 5%+ PRICE DROP DETECTED for "${prod.title}"! (-${dropPercent.toFixed(1)}%)`,
-              `Previous Price: ${prod.currency}${basePreviousPrice.toFixed(2)} ➔ New Price: ${prod.currency}${newPrice.toFixed(2)} (${dropPercent.toFixed(1)}% reduction)`
-            );
-          } else if (newPrice < basePreviousPrice) {
-            addLog(
-              'info',
-              `Tracked price update for "${prod.title}" (-${dropPercent.toFixed(1)}%)`,
-              `Price decreased from ${prod.currency}${basePreviousPrice.toFixed(2)} to ${prod.currency}${newPrice.toFixed(2)}. (Below the ${emailSettings.minDropPercent || 5}% notification threshold, email notification withheld).`
-            );
-          } else {
-            addLog(
-              'info',
-              `Recorded current price for "${prod.title}": ${prod.currency}${newPrice.toFixed(2)}`,
-              `No price reduction detected.`
-            );
+          } finally {
+            clearTimeout(timeoutId);
           }
 
-          // Record daily minimum price in history log
-          const newHistory = recordDailyLowestPrice(prod.priceHistory || [], newPrice);
+          if (response && response.ok) {
+            const scraped = await response.json();
+            const newPrice = (scraped.price && scraped.price > 0) ? scraped.price : prod.currentPrice;
 
-          updatedProducts[i] = {
-            ...prod,
-            title: (scraped.title && !scraped.title.includes('403') && !scraped.title.includes('Cloudflare')) ? scraped.title : prod.title,
-            url: scraped.url || prod.url,
-            imageUrl: scraped.imageUrl || prod.imageUrl,
-            previousPrice: prod.currentPrice,
-            currentPrice: newPrice,
-            lowestPrice: Math.min(prod.lowestPrice, newPrice),
-            inStock: scraped.inStock !== false,
-            lastChecked: new Date().toISOString(),
-            priceHistory: newHistory,
-            status: meetsThreshold ? 'alert' : 'active',
-          };
+            // Compare against currentPrice right before this check
+            const basePreviousPrice = prod.currentPrice;
+            const isDrop = newPrice < basePreviousPrice;
+            const dropAmount = isDrop ? basePreviousPrice - newPrice : 0;
+            const dropPercent = (isDrop && basePreviousPrice > 0) ? (dropAmount / basePreviousPrice) * 100 : 0;
+
+            // 5% Threshold rule enforcement for Gmail notification
+            const meetsThreshold = dropPercent >= (emailSettings.minDropPercent || 5);
+
+            if (meetsThreshold) {
+              priceDropsDetected.push({
+                title: prod.title,
+                oldPrice: basePreviousPrice,
+                newPrice,
+                currency: prod.currency,
+                url: prod.url,
+              });
+              addLog(
+                'success',
+                `🔔 OBNIŻKA CENY o ${dropPercent.toFixed(1)}% dla "${prod.title}"!`,
+                `Poprzednia: ${prod.currency}${basePreviousPrice.toFixed(2)} ➔ Nowa: ${prod.currency}${newPrice.toFixed(2)}`
+              );
+            } else if (isDrop) {
+              addLog(
+                'info',
+                `Zaktualizowano cenę dla "${prod.title}" (-${dropPercent.toFixed(1)}%)`,
+                `Cena spadła z ${prod.currency}${basePreviousPrice.toFixed(2)} na ${prod.currency}${newPrice.toFixed(2)}.`
+              );
+            } else {
+              addLog(
+                'info',
+                `Zarejestrowano cenę dla "${prod.title}": ${prod.currency}${newPrice.toFixed(2)}`
+              );
+            }
+
+            // Record daily minimum price in history log
+            const newHistory = recordDailyLowestPrice(prod.priceHistory || [], newPrice);
+
+            const newPreviousPrice = newPrice !== prod.currentPrice ? prod.currentPrice : (prod.previousPrice ?? prod.currentPrice);
+
+            updatedProducts[i] = {
+              ...prod,
+              title: (scraped.title && !scraped.title.includes('403') && !scraped.title.includes('Cloudflare')) ? scraped.title : prod.title,
+              url: prod.url,
+              imageUrl: scraped.imageUrl || prod.imageUrl,
+              previousPrice: newPreviousPrice,
+              currentPrice: newPrice,
+              lowestPrice: Math.min(prod.lowestPrice, newPrice),
+              inStock: scraped.inStock !== false,
+              lastChecked: new Date().toISOString(),
+              priceHistory: newHistory,
+              status: meetsThreshold ? 'alert' : 'active',
+            };
+
+            // Live UI state update after each product
+            setProducts([...updatedProducts]);
+          } else {
+            addLog('warning', `Nie udało się pobrać ceny dla "${prod.title}". Zachowano dotychczasową cenę.`);
+          }
+        } catch (err: any) {
+          if (err.name === 'AbortError') {
+            addLog('warning', `Przekroczono czas oczekiwania (12s) dla "${prod.title}". Pomijanie...`);
+          } else {
+            addLog('error', `Błąd podczas sprawdzania ${prod.title}: ${err.message}`);
+          }
+        } finally {
+          setCheckProgress({
+            current: i + 1,
+            total: totalCount,
+            currentTitle: prod.title,
+          });
+          setCheckingProductId(null);
         }
-      } catch (err: any) {
-        addLog('error', `Error checking ${prod.title}: ${err.message}`);
       }
-    }
 
-    setProducts(updatedProducts);
-    addLog('success', 'Completed tracking check across all product links');
+      addLog('success', `Zakończono sprawdzanie cen dla wszystkich ${totalCount} produktów.`);
 
-    // Auto-sync Google Sheet with tracked prices
-    const currentToken = token || (await getAccessToken());
-    if (sheetInfo && sheetInfo.autoSync && currentToken) {
-      await syncToGoogleSheet(sheetInfo.id, updatedProducts, currentToken);
-    }
+      // Sync updated products to server background agent
+      fetch('/api/agent/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          products: updatedProducts,
+          scheduleInterval,
+          sheetInfo,
+          emailSettings,
+          googleToken: token,
+        }),
+      }).catch((e) => console.warn('Failed to sync updated products to server:', e));
 
-    // Auto-send Gmail notification ONLY when 5%+ price drops are present
-    if (emailSettings.enabled && priceDropsDetected.length > 0 && currentToken) {
-      const recipient = emailSettings.recipientEmail || user?.email;
-      if (recipient) {
-        await dispatchPriceDropEmail(recipient, priceDropsDetected, currentToken);
+      // Auto-sync Google Sheet with tracked prices
+      const currentToken = token || (await getAccessToken());
+      if (sheetInfo && sheetInfo.autoSync && currentToken) {
+        await syncToGoogleSheet(sheetInfo.id, updatedProducts, currentToken);
       }
-    } else if (priceDropsDetected.length === 0) {
-      addLog('info', 'Gmail notification check:', `No product prices dropped by 5%+ during this run. No email dispatched.`);
-    }
 
-    setIsAgentRunning(false);
+      // Auto-send Gmail notification ONLY when 5%+ price drops are present
+      if (emailSettings.enabled && priceDropsDetected.length > 0 && currentToken) {
+        const recipient = emailSettings.recipientEmail || user?.email;
+        if (recipient) {
+          await dispatchPriceDropEmail(recipient, priceDropsDetected, currentToken);
+        }
+      } else if (priceDropsDetected.length === 0) {
+        addLog('info', 'Powiadomienie Gmail:', `Żaden produkt nie spadł o co najmniej 5% ceny. Brak wiadomości email.`);
+      }
+    } finally {
+      isAgentRunningRef.current = false;
+      setIsAgentRunning(false);
+      setCheckProgress(null);
+    }
   };
 
   // Check single product
@@ -537,7 +593,7 @@ export default function App() {
             return {
               ...p,
               title: (scraped.title && !scraped.title.includes('403') && !scraped.title.includes('Cloudflare')) ? scraped.title : p.title,
-              url: scraped.overrodeUrlToCeneo ? scraped.url : p.url,
+              url: p.url,
               imageUrl: scraped.imageUrl || p.imageUrl,
               previousPrice: p.currentPrice !== newPrice ? p.currentPrice : p.previousPrice,
               currentPrice: newPrice,
@@ -861,6 +917,7 @@ export default function App() {
         <AgentControlPanel
           onRunAgent={runServerAgentRun}
           isRunning={isAgentRunning}
+          checkProgress={checkProgress}
           onOpenAddModal={() => setIsAddModalOpen(true)}
           onOpenBackupModal={() => setIsBackupModalOpen(true)}
           searchQuery={searchQuery}
@@ -871,6 +928,9 @@ export default function App() {
           onScheduleChange={setScheduleInterval}
           nextRunSeconds={nextRunSeconds}
         />
+
+        {/* Live Manual Price Check Progress Bar */}
+        <CheckProgressBar progress={checkProgress} isRunning={isAgentRunning} />
 
         {/* Integration Hub (Google Sheets & Gmail Panels) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
