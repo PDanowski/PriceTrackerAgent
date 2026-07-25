@@ -425,6 +425,11 @@ export default function App() {
 
     try {
       for (let i = 0; i < updatedProducts.length; i++) {
+        if (i > 0) {
+          // Polite delay between product checks to prevent store rate limiting
+          await new Promise((r) => setTimeout(r, 400));
+        }
+
         const prod = updatedProducts[i];
         setCheckingProductId(prod.id);
         setCheckProgress({
@@ -436,20 +441,32 @@ export default function App() {
         try {
           addLog('info', `Sprawdzanie ceny [${i + 1}/${totalCount}]: "${prod.title}"...`);
 
-          // 12-second per-product scrape timeout so slow sites don't freeze the progress bar
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 12000);
-
+          // 1-time auto-retry on scrape errors / timeouts with 12s per-attempt timeout
           let response: Response | null = null;
-          try {
-            response = await fetch('/api/scrape', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url: prod.url }),
-              signal: controller.signal,
-            });
-          } finally {
-            clearTimeout(timeoutId);
+          for (let retry = 0; retry < 2; retry++) {
+            if (retry > 0) {
+              addLog('info', `Ponowna próba dla "${prod.title}" po krótkim opóźnieniu...`);
+              await new Promise((r) => setTimeout(r, 1200));
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
+            try {
+              const res = await fetch('/api/scrape', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: prod.url }),
+                signal: controller.signal,
+              });
+              if (res.ok) {
+                response = res;
+                break;
+              }
+            } catch (fetchErr: any) {
+              if (retry === 1) throw fetchErr;
+            } finally {
+              clearTimeout(timeoutId);
+            }
           }
 
           if (response && response.ok) {
@@ -779,7 +796,8 @@ export default function App() {
   const dispatchPriceDropEmail = async (
     recipientEmail: string,
     drops: Array<{ title: string; oldPrice: number; newPrice: number; currency: string; url: string }>,
-    accessToken: string
+    accessToken: string,
+    allowAutoRetry = true
   ) => {
     addLog('info', `Dispatching Gmail price drop notification to ${recipientEmail}...`);
 
@@ -800,7 +818,27 @@ export default function App() {
       });
 
       if (!response.ok) {
-        const err = await response.json();
+        const err = await response.json().catch(() => ({ error: 'Failed to dispatch email' }));
+        if (response.status === 401 || err.isTokenExpired) {
+          setToken(null);
+          localStorage.removeItem('google_access_token');
+          localStorage.removeItem('google_access_token_expires_at');
+
+          if (allowAutoRetry) {
+            addLog('info', 'Google token expired during Gmail alert. Attempting automatic token renewal...');
+            try {
+              const res = await googleSignIn();
+              if (res) {
+                setUser(res.user);
+                setToken(res.accessToken);
+                return await dispatchPriceDropEmail(recipientEmail, drops, res.accessToken, false);
+              }
+            } catch (reauthErr: any) {
+              console.warn('Auto re-authentication for Gmail skipped:', reauthErr);
+            }
+          }
+          throw new Error('Google token expired. Sign in again to enable automated Gmail alerts.');
+        }
         throw new Error(err.error || 'Failed to dispatch email');
       }
 

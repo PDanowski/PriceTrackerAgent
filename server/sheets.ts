@@ -42,7 +42,11 @@ sheetsRouter.post('/create', async (req, res) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      return res.status(response.status).json({ error: `Google Sheets API error: ${errText}` });
+      const is401 = response.status === 401;
+      return res.status(response.status).json({
+        error: is401 ? 'Google Access Token is expired or invalid' : `Google Sheets API error: ${errText}`,
+        isTokenExpired: is401,
+      });
     }
 
     const data = await response.json();
@@ -211,7 +215,11 @@ sheetsRouter.post('/sync', async (req, res) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      return res.status(response.status).json({ error: `Google Sheets sync error: ${errText}` });
+      const is401 = response.status === 401;
+      return res.status(response.status).json({
+        error: is401 ? 'Google Access Token is expired or invalid' : `Google Sheets sync error: ${errText}`,
+        isTokenExpired: is401,
+      });
     }
 
     // 4. Also sync Daily Lowest History Log if history exists
@@ -292,7 +300,11 @@ sheetsRouter.get('/list', async (req, res) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      return res.status(response.status).json({ error: `Drive API error: ${errText}` });
+      const is401 = response.status === 401;
+      return res.status(response.status).json({
+        error: is401 ? 'Google Access Token is expired or invalid' : `Drive API error: ${errText}`,
+        isTokenExpired: is401,
+      });
     }
 
     const data = await response.json();

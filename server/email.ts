@@ -51,7 +51,11 @@ emailRouter.post('/send', async (req, res) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      return res.status(response.status).json({ error: `Gmail API error: ${errText}` });
+      const is401 = response.status === 401;
+      return res.status(response.status).json({
+        error: is401 ? 'Google Access Token is expired or invalid' : `Gmail API error: ${errText}`,
+        isTokenExpired: is401,
+      });
     }
 
     const data = await response.json();

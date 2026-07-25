@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "agent_state": {
+      "title": "Agent State",
+      "description": "Global server configuration for background price scraping agent",
+      "properties": {
+        "scheduleInterval": { "type": "string" },
+        "lastRunTime": { "type": "string" },
+        "nextRunTime": { "type": "string" },
+        "isRunning": { "type": "boolean" },
+        "sheetInfo": { "type": "object" },
+        "emailSettings": { "type": "object" },
+        "googleToken": { "type": "string" }
+      }
+    },
+    "products": {
+      "title": "Tracked Products",
+      "description": "List of tracked items with price history and stock status",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "currentPrice": { "type": "number" },
+        "previousPrice": { "type": "number" },
+        "lowestPrice": { "type": "number" },
+        "highestPrice": { "type": "number" },
+        "currency": { "type": "string" },
+        "inStock": { "type": "boolean" },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "targetPrice": { "type": "number" },
+        "lastChecked": { "type": "string" },
+        "needsManualPrice": { "type": "boolean" },
+        "scrapeWarning": { "type": "string" },
+        "priceHistory": { "type": "array", "items": { "type": "object" } },
+        "colorBadge": { "type": "string" }
+      }
+    },
+    "logs": {
+      "title": "System Logs",
+      "description": "Activity and scrape logs",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "type": { "type": "string" },
+        "message": { "type": "string" },
+        "details": { "type": "string" }
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@
   "appId": "1:594171880532:web:1eb2039d6f4037a82db9c1",
   "apiKey": "AIzaSyDOhkhyM0XG6LA_dBPwm3lO0gZjL4gcc8Q",
   "authDomain": "commanding-citron-nzp2g.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-productpricetrac-fba46369-a09f-4992-814e-e2ce4348633b",
   "storageBucket": "commanding-citron-nzp2g.firebasestorage.app",
   "messagingSenderId": "594171880532",
   "measurementId": "",

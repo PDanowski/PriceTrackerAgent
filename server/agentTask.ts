@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { scrapeProductDetails } from './scraper';
+import { loadFirestoreState, saveFirestoreState } from './firebase';
 
 export interface ServerProduct {
   id: string;
@@ -53,7 +54,7 @@ const DATA_FILE = path.join(process.cwd(), 'agent_server_state.json');
 let state: AgentServerState = {
   scheduleInterval: '3hr',
   lastRunTime: null,
-  nextRunTime: new Date(Date.now() + 3 * 3600 * 1000).toISOString(),
+  nextRunTime: null,
   isRunning: false,
   products: [],
   sheetInfo: null,
@@ -77,8 +78,9 @@ let state: AgentServerState = {
   ],
 };
 
-// Load saved state from disk on startup if exists
-function loadState() {
+// Load saved state from disk and Firestore
+async function initPersistentState() {
+  // First load local disk cache if available
   try {
     if (fs.existsSync(DATA_FILE)) {
       const raw = fs.readFileSync(DATA_FILE, 'utf-8');
@@ -87,10 +89,41 @@ function loadState() {
       if (!Array.isArray(state.products)) {
         state.products = [];
       }
-      console.log('Loaded persistent agent server state from disk.');
+      console.log('Loaded agent server state from local disk cache.');
     }
   } catch (err) {
     console.warn('Failed to load agent server state from disk:', err);
+  }
+
+  // Then fetch authoritative Firestore state
+  try {
+    const firestoreData = await loadFirestoreState();
+    if (firestoreData) {
+      state = {
+        ...state,
+        ...firestoreData,
+        products: Array.isArray(firestoreData.products) ? firestoreData.products : (state.products || []),
+        emailSettings: { ...state.emailSettings, ...(firestoreData.emailSettings || {}) },
+        sheetInfo: firestoreData.sheetInfo !== undefined ? firestoreData.sheetInfo : state.sheetInfo,
+        logs: Array.isArray(firestoreData.logs) && firestoreData.logs.length > 0 ? firestoreData.logs : state.logs,
+      };
+      // If nextRunTime was not in Firestore, compute it now based on scheduleInterval
+      if (!state.nextRunTime && state.scheduleInterval !== 'manual') {
+        state.nextRunTime = computeNextRunTime(state.scheduleInterval);
+      }
+      console.log(`Firestore state synced into agent runtime with ${state.products.length} products. Next run: ${state.nextRunTime || 'Manual'}`);
+    } else {
+      if (!state.nextRunTime && state.scheduleInterval !== 'manual') {
+        state.nextRunTime = computeNextRunTime(state.scheduleInterval);
+      }
+      // Seed initial state into Firestore
+      saveFirestoreState(state);
+    }
+  } catch (err) {
+    console.warn('Error syncing with Firestore on boot:', err);
+    if (!state.nextRunTime && state.scheduleInterval !== 'manual') {
+      state.nextRunTime = computeNextRunTime(state.scheduleInterval);
+    }
   }
 }
 
@@ -100,9 +133,19 @@ function saveState() {
   } catch (err) {
     console.warn('Failed to save agent server state to disk:', err);
   }
+  // Asynchronously push to Firestore
+  saveFirestoreState(state).catch((err) => console.warn('Background Firestore save failed:', err));
 }
 
-loadState();
+const initStatePromise = initPersistentState();
+
+export async function getAgentStateAsync(): Promise<AgentServerState> {
+  await initStatePromise;
+  if (!Array.isArray(state.products)) {
+    state.products = [];
+  }
+  return state;
+}
 
 export function getAgentState(): AgentServerState {
   if (!Array.isArray(state.products)) {
@@ -111,7 +154,8 @@ export function getAgentState(): AgentServerState {
   return state;
 }
 
-export function updateAgentConfig(partialState: Partial<AgentServerState>): AgentServerState {
+export async function updateAgentConfig(partialState: Partial<AgentServerState>): Promise<AgentServerState> {
+  await initStatePromise;
   if (Array.isArray(partialState.products)) {
     state.products = partialState.products;
   }
@@ -121,6 +165,12 @@ export function updateAgentConfig(partialState: Partial<AgentServerState>): Agen
     if (intervalChanged || !state.nextRunTime) {
       state.nextRunTime = computeNextRunTime(state.scheduleInterval);
     }
+  }
+  if (partialState.nextRunTime !== undefined) {
+    state.nextRunTime = partialState.nextRunTime;
+  }
+  if (partialState.lastRunTime !== undefined) {
+    state.lastRunTime = partialState.lastRunTime;
   }
   if (partialState.sheetInfo !== undefined) state.sheetInfo = partialState.sheetInfo;
   if (partialState.emailSettings) state.emailSettings = { ...state.emailSettings, ...partialState.emailSettings };
@@ -200,7 +250,14 @@ export async function runServerAgentCheck(): Promise<AgentServerState> {
   const priceDropsToSend: Array<{ title: string; oldPrice: number; newPrice: number; currency: string; url: string }> = [];
   const updatedProducts: ServerProduct[] = [];
 
+  let productIndex = 0;
   for (const product of state.products) {
+    if (productIndex > 0) {
+      // Polite delay between scrapes to avoid rate-limiting stores
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    productIndex++;
+
     try {
       addServerLog('info', `Background scraping product: ${product.title}...`);
       const scraped = await scrapeProductDetails(product.url);

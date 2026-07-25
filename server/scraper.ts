@@ -206,7 +206,9 @@ export async function scrapeProductDetails(url: string) {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       if (attempt > 0) {
-        await new Promise((r) => setTimeout(r, 250 + Math.random() * 250));
+        // Exponential backoff with jitter on retries (e.g. ~600ms, ~1500ms)
+        const backoffMs = Math.pow(2, attempt) * 400 + Math.floor(Math.random() * 300);
+        await new Promise((r) => setTimeout(r, backoffMs));
       }
 
       const headers = getRandomHeaders(attempt);

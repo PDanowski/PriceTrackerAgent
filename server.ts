@@ -6,7 +6,7 @@ import { sheetsRouter } from './server/sheets';
 import { emailRouter } from './server/email';
 import { driveRouter } from './server/drive';
 import { scrapeProductDetails } from './server/scraper';
-import { getAgentState, updateAgentConfig, runServerAgentCheck, startServerBackgroundScheduler } from './server/agentTask';
+import { getAgentState, getAgentStateAsync, updateAgentConfig, runServerAgentCheck, startServerBackgroundScheduler } from './server/agentTask';
 
 // Resolve directory safely across ESM (dev) and CJS (production bundle)
 const getDirname = () => {
@@ -34,12 +34,13 @@ app.use('/api/email', emailRouter);
 app.use('/api/drive', driveRouter);
 
 // Server-side continuous background agent endpoints
-app.get('/api/agent/state', (_req, res) => {
-  res.json(getAgentState());
+app.get('/api/agent/state', async (_req, res) => {
+  const state = await getAgentStateAsync();
+  res.json(state);
 });
 
-app.post('/api/agent/config', (req, res) => {
-  const updated = updateAgentConfig(req.body);
+app.post('/api/agent/config', async (req, res) => {
+  const updated = await updateAgentConfig(req.body);
   res.json(updated);
 });
 
