@@ -46,7 +46,7 @@ let cachedAccessToken: string | null = ((): string | null => {
   }
 })();
 
-const saveToken = (token: string | null, expiresInSeconds: number = 3000) => {
+export const saveToken = (token: string | null, expiresInSeconds: number = 3000) => {
   cachedAccessToken = token;
   try {
     if (token) {

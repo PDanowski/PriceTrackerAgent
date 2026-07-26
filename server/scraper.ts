@@ -1,12 +1,19 @@
 import * as cheerio from 'cheerio';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { searchCeneoFallback } from './ceneo';
 
 // Initialize Gemini API client lazily if key is available
 export function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
 }
 
 // Helper to parse price strings safely with support for European (1.499,00 zł) and US (1,499.00 $) formats
@@ -733,37 +740,80 @@ CRITICAL INSTRUCTION: Identify ONLY the actual buying price to pay (sale price) 
 Parse the exact currency symbol or code (e.g. "zł", "PLN", "€", "$", "£", "CHF") as displayed on the webpage.
 
 Page text snippet:
-"""${bodySnippet}"""
+"""${bodySnippet}"""`;
 
-Return a JSON object with strictly these keys:
-{
-  "title": "main product name",
-  "price": number (e.g. 1499.00),
-  "currency": "exact currency symbol or code extracted from page (e.g. zł, $, €, £, CHF)",
-  "inStock": boolean,
-  "imageUrl": "optional absolute image url"
-}
-Return ONLY valid JSON.`;
+      const schema = {
+        type: Type.OBJECT,
+        properties: {
+          title: {
+            type: Type.STRING,
+            description: 'Main product name or title',
+          },
+          price: {
+            type: Type.NUMBER,
+            description: 'Current purchasing price numeric value (e.g. 1499.00)',
+          },
+          currency: {
+            type: Type.STRING,
+            description: 'Exact currency symbol or code extracted from page (e.g. zł, $, €, £, CHF, PLN)',
+          },
+          inStock: {
+            type: Type.BOOLEAN,
+            description: 'Availability status (true if available to buy, false if out of stock)',
+          },
+          imageUrl: {
+            type: Type.STRING,
+            description: 'Optional absolute image URL for product',
+          },
+        },
+        required: ['title', 'price', 'currency', 'inStock'],
+      };
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: prompt,
-      });
+      // Try models in sequence if rate-limited (429)
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-3.6-flash'];
+      let textResp = '';
 
-      const textResp = response.text || '';
-      const cleanJson = textResp.replace(/```json/gi, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
-
-      if (parsed.title && !scrapedTitle) scrapedTitle = parsed.title;
-      if (parsed.price && (!scrapedPrice || scrapedPrice === 0)) scrapedPrice = parseFloat(parsed.price);
-      if (parsed.currency && !scrapedCurrency) {
-        const c = parsed.currency.trim();
-        scrapedCurrency = c === 'PLN' ? 'zł' : c === 'EUR' ? '€' : c === 'USD' ? '$' : c === 'GBP' ? '£' : c;
+      for (const modelName of modelsToTry) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: schema,
+            },
+          });
+          textResp = response.text?.trim() || '';
+          if (textResp) break;
+        } catch (modelErr: any) {
+          const errText = modelErr?.message || String(modelErr);
+          if (errText.includes('429') || errText.includes('RESOURCE_EXHAUSTED') || errText.includes('quota')) {
+            console.warn(`⚠️ Gemini model '${modelName}' quota/rate limit reached (429). Trying fallback model...`);
+            continue;
+          }
+          throw modelErr;
+        }
       }
-      if (typeof parsed.inStock === 'boolean') scrapedInStock = parsed.inStock;
-      if (parsed.imageUrl && !scrapedImage) scrapedImage = parsed.imageUrl;
+
+      if (textResp) {
+        const parsed = JSON.parse(textResp);
+
+        if (parsed.title && !scrapedTitle) scrapedTitle = parsed.title;
+        if (parsed.price && (!scrapedPrice || scrapedPrice === 0)) scrapedPrice = parseFloat(parsed.price);
+        if (parsed.currency && !scrapedCurrency) {
+          const c = String(parsed.currency).trim();
+          scrapedCurrency = c === 'PLN' ? 'zł' : c === 'EUR' ? '€' : c === 'USD' ? '$' : c === 'GBP' ? '£' : c;
+        }
+        if (typeof parsed.inStock === 'boolean') scrapedInStock = parsed.inStock;
+        if (parsed.imageUrl && !scrapedImage) scrapedImage = parsed.imageUrl;
+      }
     } catch (geminiErr: any) {
-      // Quietly swallow Gemini errors as optional fallback
+      const msg = geminiErr?.message || String(geminiErr);
+      if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
+        console.warn('⚠️ Gemini API rate limit / quota exhausted across all models. Proceeding with standard web scraping fallbacks.');
+      } else {
+        console.warn('Gemini structured response extraction warning:', msg);
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from 'firebase/auth';
-import { initAuth, googleSignIn, logout, getAccessToken } from './auth';
+import { initAuth, googleSignIn, logout, getAccessToken, saveToken } from './auth';
 import { Product, GoogleSheetInfo, EmailSettings, AgentLog, ColorBadgeOption, CheckProgress } from './types';
 import { INITIAL_PRODUCTS } from './mockData';
 import { getSecondsUntilNextNoonCET } from './utils/timeUtils';
@@ -108,7 +108,7 @@ export default function App() {
       try {
         const accessToken = token || (await getAccessToken());
         if (accessToken) {
-          await fetch('/api/drive/backup', {
+          const res = await fetch('/api/drive/backup', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -116,6 +116,10 @@ export default function App() {
             },
             body: JSON.stringify({ products, accessToken }),
           });
+          if (res.status === 401) {
+            saveToken(null);
+            setToken(null);
+          }
         }
       } catch (err) {
         console.warn('Auto Google Drive backup background attempt:', err);

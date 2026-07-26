@@ -29,8 +29,10 @@ async function findBackupFileOnDrive(token: string): Promise<{ id: string; name:
 
   if (!response.ok) {
     const errorText = await response.text();
-    const err: any = new Error(`Google Drive API error (${response.status}): ${errorText}`);
+    const is401 = response.status === 401;
+    const err: any = new Error(is401 ? 'Token dostępowy Google wygasł lub jest nieprawidłowy. Zaloguj się ponownie przez Google.' : `Google Drive API error (${response.status}): ${errorText}`);
     err.status = response.status;
+    err.isTokenExpired = is401;
     throw err;
   }
 
@@ -46,7 +48,7 @@ driveRouter.post('/backup', async (req, res) => {
   try {
     const token = getAuthToken(req);
     if (!token) {
-      return res.status(401).json({ error: 'Brak tokena dostępowego Google. Zaloguj się przez Google.' });
+      return res.status(401).json({ error: 'Brak tokena dostępowego Google. Zaloguj się przez Google.', isTokenExpired: true });
     }
 
     const { products } = req.body;
@@ -73,7 +75,11 @@ driveRouter.post('/backup', async (req, res) => {
 
       if (!updateRes.ok) {
         const errText = await updateRes.text();
-        return res.status(updateRes.status).json({ error: `Błąd aktualizacji pliku na Drive: ${errText}` });
+        const is401 = updateRes.status === 401;
+        return res.status(updateRes.status).json({
+          error: is401 ? 'Token dostępowy Google wygasł lub jest nieprawidłowy. Zaloguj się ponownie przez Google.' : `Błąd aktualizacji pliku na Drive: ${errText}`,
+          isTokenExpired: is401,
+        });
       }
 
       const updatedFileData = await updateRes.json();
@@ -115,7 +121,11 @@ driveRouter.post('/backup', async (req, res) => {
 
       if (!createRes.ok) {
         const errText = await createRes.text();
-        return res.status(createRes.status).json({ error: `Błąd tworzenia pliku na Drive: ${errText}` });
+        const is401 = createRes.status === 401;
+        return res.status(createRes.status).json({
+          error: is401 ? 'Token dostępowy Google wygasł lub jest nieprawidłowy. Zaloguj się ponownie przez Google.' : `Błąd tworzenia pliku na Drive: ${errText}`,
+          isTokenExpired: is401,
+        });
       }
 
       const newFileData = await createRes.json();
@@ -128,8 +138,15 @@ driveRouter.post('/backup', async (req, res) => {
       });
     }
   } catch (error: any) {
+    const statusCode = error.status || (error.isTokenExpired ? 401 : 500);
+    if (statusCode === 401 || error.isTokenExpired) {
+      console.warn('⚠️ Drive backup rejected: Google access token expired or missing (401).');
+      return res.status(401).json({
+        error: 'Token dostępowy Google wygasł lub jest nieprawidłowy. Zaloguj się ponownie przez Google.',
+        isTokenExpired: true,
+      });
+    }
     console.error('Error in /api/drive/backup:', error);
-    const statusCode = error.status || 500;
     return res.status(statusCode).json({ error: error.message || 'Nie udało się zapisać kopii na Google Drive' });
   }
 });
@@ -139,7 +156,7 @@ driveRouter.get('/restore', async (req, res) => {
   try {
     const token = getAuthToken(req);
     if (!token) {
-      return res.status(401).json({ error: 'Brak tokena dostępowego Google. Zaloguj się przez Google.' });
+      return res.status(401).json({ error: 'Brak tokena dostępowego Google. Zaloguj się przez Google.', isTokenExpired: true });
     }
 
     const existingFile = await findBackupFileOnDrive(token);
@@ -159,7 +176,11 @@ driveRouter.get('/restore', async (req, res) => {
 
     if (!downloadRes.ok) {
       const errText = await downloadRes.text();
-      return res.status(downloadRes.status).json({ error: `Błąd pobierania pliku z Drive: ${errText}` });
+      const is401 = downloadRes.status === 401;
+      return res.status(downloadRes.status).json({
+        error: is401 ? 'Token dostępowy Google wygasł lub jest nieprawidłowy. Zaloguj się ponownie przez Google.' : `Błąd pobierania pliku z Drive: ${errText}`,
+        isTokenExpired: is401,
+      });
     }
 
     const products = await downloadRes.json();
@@ -176,8 +197,15 @@ driveRouter.get('/restore', async (req, res) => {
       message: 'Pomyślnie pobrano produkty z Google Drive!',
     });
   } catch (error: any) {
+    const statusCode = error.status || (error.isTokenExpired ? 401 : 500);
+    if (statusCode === 401 || error.isTokenExpired) {
+      console.warn('⚠️ Drive restore rejected: Google access token expired or missing (401).');
+      return res.status(401).json({
+        error: 'Token dostępowy Google wygasł lub jest nieprawidłowy. Zaloguj się ponownie przez Google.',
+        isTokenExpired: true,
+      });
+    }
     console.error('Error in /api/drive/restore:', error);
-    const statusCode = error.status || 500;
     return res.status(statusCode).json({ error: error.message || 'Błąd przywracania z Google Drive' });
   }
 });
