@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { recordDailyLowestPrice, buildPriceDropEmailHtml } from '../src/utils/priceTrackerUtils';
+import { recordDailyLowestPrice, getPreviousDayPrice, buildPriceDropEmailHtml } from '../src/utils/priceTrackerUtils';
 
 describe('Price Tracker Utilities', () => {
   it('records initial daily price in history', () => {
@@ -28,6 +28,36 @@ describe('Price Tracker Utilities', () => {
 
     expect(updated.length).toBe(1);
     expect(updated[0].price).toBe(299);
+  });
+
+  it('returns null for getPreviousDayPrice if history only has records from today', () => {
+    const todayISO = new Date().toISOString();
+    const history = [{ timestamp: todayISO, price: 299 }];
+
+    expect(getPreviousDayPrice(history)).toBeNull();
+  });
+
+  it('returns price from previous day for getPreviousDayPrice', () => {
+    const yesterdayISO = new Date(Date.now() - 86400000).toISOString();
+    const todayISO = new Date().toISOString();
+    const history = [
+      { timestamp: yesterdayISO, price: 350 },
+      { timestamp: todayISO, price: 299 },
+    ];
+
+    expect(getPreviousDayPrice(history)).toBe(350);
+  });
+
+  it('ignores intra-day price changes when calculating previous day price', () => {
+    const yesterdayISO = new Date(Date.now() - 86400000).toISOString();
+    const todayISO = new Date().toISOString();
+    const history = [
+      { timestamp: yesterdayISO, price: 400 },
+      { timestamp: todayISO, price: 300 },
+    ];
+
+    const updatedHistory = recordDailyLowestPrice(history, 280);
+    expect(getPreviousDayPrice(updatedHistory)).toBe(400);
   });
 
   it('generates email HTML for price drops', () => {

@@ -4,7 +4,7 @@ import { initAuth, googleSignIn, logout, getAccessToken, saveToken } from './aut
 import { Product, GoogleSheetInfo, EmailSettings, AgentLog, ColorBadgeOption, CheckProgress } from './types';
 import { INITIAL_PRODUCTS } from './mockData';
 import { getSecondsUntilNextNoonCET } from './utils/timeUtils';
-import { recordDailyLowestPrice, buildPriceDropEmailHtml } from './utils/priceTrackerUtils';
+import { recordDailyLowestPrice, getPreviousDayPrice, buildPriceDropEmailHtml } from './utils/priceTrackerUtils';
 import { Header } from './components/Header';
 import { GoogleAuthBanner } from './components/GoogleAuthBanner';
 import { AgentControlPanel } from './components/AgentControlPanel';
@@ -23,6 +23,8 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isAuthInitializing, setIsAuthInitializing] = useState(true);
+  const [isInitialSyncDone, setIsInitialSyncDone] = useState(false);
 
   // App Data state
   const [products, setProducts] = useState<Product[]>(() => {
@@ -195,19 +197,24 @@ export default function App() {
 
   // Init Firebase Auth
   useEffect(() => {
-    initAuth(
+    const unsubscribe = initAuth(
       (currentUser, accessToken) => {
         setUser(currentUser);
         setToken(accessToken);
         if (!emailSettings.recipientEmail && currentUser.email) {
           setEmailSettings((prev) => ({ ...prev, recipientEmail: currentUser.email || '' }));
         }
+        setIsAuthInitializing(false);
       },
       () => {
         setUser(null);
         setToken(null);
+        setIsAuthInitializing(false);
       }
     );
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, []);
 
   const targetRunTimeRef = useRef<number>(Date.now() + 10800 * 1000);
@@ -239,6 +246,8 @@ export default function App() {
       }
     } catch (e) {
       console.warn('Failed to sync state from agent server:', e);
+    } finally {
+      setIsInitialSyncDone(true);
     }
   };
 
@@ -409,6 +418,10 @@ export default function App() {
 
   // Run full price check agent loop with progress bar updates
   const runFullAgentCheck = async () => {
+    if (isAuthInitializing || !isInitialSyncDone) {
+      addLog('info', 'Trwa inicjalizacja aplikacji i weryfikacja stanu... Proszę spróbować za chwilę.');
+      return;
+    }
     if (isAgentRunningRef.current) {
       console.warn('Agent check already in progress. Skipping duplicate run.');
       return;
@@ -422,25 +435,20 @@ export default function App() {
     setIsAgentRunning(true);
     const totalCount = products.length;
     setCheckProgress({ current: 0, total: totalCount, currentTitle: products[0]?.title });
-    addLog('info', `Rozpoczynanie sprawdzania cen dla ${totalCount} produktów z listy...`);
+    addLog('info', `Rozpoczynanie równoległego sprawdzania cen (4 procesy) dla ${totalCount} produktów z listy...`);
 
     let priceDropsDetected: Array<{ title: string; oldPrice: number; newPrice: number; currency: string; url: string }> = [];
     const updatedProducts = [...products];
 
-    try {
-      for (let i = 0; i < updatedProducts.length; i++) {
-        if (i > 0) {
-          // Polite delay between product checks to prevent store rate limiting
-          await new Promise((r) => setTimeout(r, 400));
-        }
+    const CONCURRENCY_LIMIT = 4;
+    let nextProductIndex = 0;
+    let completedCount = 0;
 
+    const worker = async () => {
+      while (nextProductIndex < totalCount) {
+        const i = nextProductIndex++;
         const prod = updatedProducts[i];
         setCheckingProductId(prod.id);
-        setCheckProgress({
-          current: i,
-          total: totalCount,
-          currentTitle: prod.title,
-        });
 
         try {
           addLog('info', `Sprawdzanie ceny [${i + 1}/${totalCount}]: "${prod.title}"...`);
@@ -449,8 +457,7 @@ export default function App() {
           let response: Response | null = null;
           for (let retry = 0; retry < 2; retry++) {
             if (retry > 0) {
-              addLog('info', `Ponowna próba dla "${prod.title}" po krótkim opóźnieniu...`);
-              await new Promise((r) => setTimeout(r, 1200));
+              await new Promise((r) => setTimeout(r, 800));
             }
 
             const controller = new AbortController();
@@ -477,16 +484,20 @@ export default function App() {
             const scraped = await response.json();
             const newPrice = (scraped.price && scraped.price > 0) ? scraped.price : prod.currentPrice;
 
-            // Compare against currentPrice right before this check
-            const basePreviousPrice = prod.currentPrice;
-            const isDrop = newPrice < basePreviousPrice;
-            const dropAmount = isDrop ? basePreviousPrice - newPrice : 0;
-            const dropPercent = (isDrop && basePreviousPrice > 0) ? (dropAmount / basePreviousPrice) * 100 : 0;
+            // Record daily minimum price in history log first
+            const newHistory = recordDailyLowestPrice(prod.priceHistory || [], newPrice);
+            const prevDayPrice = getPreviousDayPrice(newHistory) ?? prod.previousPrice;
+
+            // Compare against price from last day
+            const basePreviousPrice = prevDayPrice;
+            const isDrop = basePreviousPrice !== null && newPrice < basePreviousPrice;
+            const dropAmount = isDrop && basePreviousPrice ? basePreviousPrice - newPrice : 0;
+            const dropPercent = (isDrop && basePreviousPrice && basePreviousPrice > 0) ? (dropAmount / basePreviousPrice) * 100 : 0;
 
             // 5% Threshold rule enforcement for Gmail notification
-            const meetsThreshold = dropPercent >= (emailSettings.minDropPercent || 5);
+            const meetsThreshold = isDrop && dropPercent >= (emailSettings.minDropPercent || 5);
 
-            if (meetsThreshold) {
+            if (meetsThreshold && basePreviousPrice !== null) {
               priceDropsDetected.push({
                 title: prod.title,
                 oldPrice: basePreviousPrice,
@@ -497,9 +508,9 @@ export default function App() {
               addLog(
                 'success',
                 `🔔 OBNIŻKA CENY o ${dropPercent.toFixed(1)}% dla "${prod.title}"!`,
-                `Poprzednia: ${prod.currency}${basePreviousPrice.toFixed(2)} ➔ Nowa: ${prod.currency}${newPrice.toFixed(2)}`
+                `Poprzednia (z wczoraj): ${prod.currency}${basePreviousPrice.toFixed(2)} ➔ Nowa: ${prod.currency}${newPrice.toFixed(2)}`
               );
-            } else if (isDrop) {
+            } else if (isDrop && basePreviousPrice !== null) {
               addLog(
                 'info',
                 `Zaktualizowano cenę dla "${prod.title}" (-${dropPercent.toFixed(1)}%)`,
@@ -512,17 +523,12 @@ export default function App() {
               );
             }
 
-            // Record daily minimum price in history log
-            const newHistory = recordDailyLowestPrice(prod.priceHistory || [], newPrice);
-
-            const newPreviousPrice = newPrice !== prod.currentPrice ? prod.currentPrice : (prod.previousPrice ?? prod.currentPrice);
-
             updatedProducts[i] = {
               ...prod,
               title: (scraped.title && !scraped.title.includes('403') && !scraped.title.includes('Cloudflare')) ? scraped.title : prod.title,
               url: prod.url,
               imageUrl: scraped.imageUrl || prod.imageUrl,
-              previousPrice: newPreviousPrice,
+              previousPrice: prevDayPrice,
               currentPrice: newPrice,
               lowestPrice: Math.min(prod.lowestPrice, newPrice),
               inStock: scraped.inStock !== false,
@@ -531,7 +537,7 @@ export default function App() {
               status: meetsThreshold ? 'alert' : 'active',
             };
 
-            // Live UI state update after each product
+            // Live UI state update after each product finishes
             setProducts([...updatedProducts]);
           } else {
             addLog('warning', `Nie udało się pobrać ceny dla "${prod.title}". Zachowano dotychczasową cenę.`);
@@ -543,14 +549,20 @@ export default function App() {
             addLog('error', `Błąd podczas sprawdzania ${prod.title}: ${err.message}`);
           }
         } finally {
+          completedCount++;
           setCheckProgress({
-            current: i + 1,
+            current: completedCount,
             total: totalCount,
             currentTitle: prod.title,
           });
-          setCheckingProductId(null);
         }
       }
+    };
+
+    try {
+      const activeWorkerCount = Math.min(CONCURRENCY_LIMIT, totalCount);
+      await Promise.all(Array.from({ length: activeWorkerCount }, () => worker()));
+      setCheckingProductId(null);
 
       addLog('success', `Zakończono sprawdzanie cen dla wszystkich ${totalCount} produktów.`);
 
@@ -610,19 +622,20 @@ export default function App() {
         const updated = products.map((p) => {
           if (p.id === id) {
             const newHistory = recordDailyLowestPrice(p.priceHistory || [], newPrice);
+            const prevDayPrice = getPreviousDayPrice(newHistory) ?? p.previousPrice;
 
             return {
               ...p,
               title: (scraped.title && !scraped.title.includes('403') && !scraped.title.includes('Cloudflare')) ? scraped.title : p.title,
               url: p.url,
               imageUrl: scraped.imageUrl || p.imageUrl,
-              previousPrice: p.currentPrice !== newPrice ? p.currentPrice : p.previousPrice,
+              previousPrice: prevDayPrice,
               currentPrice: newPrice,
               lowestPrice: Math.min(p.lowestPrice, newPrice),
               inStock: scraped.inStock !== false,
               lastChecked: new Date().toISOString(),
               priceHistory: newHistory,
-              status: newPrice < p.currentPrice ? 'alert' : 'active',
+              status: prevDayPrice !== null && newPrice < prevDayPrice ? 'alert' : 'active',
             } as Product;
           }
           return p;
@@ -649,13 +662,15 @@ export default function App() {
     const updated = products.map((p) => {
       if (p.id === id) {
         const newHistory = recordDailyLowestPrice(p.priceHistory || [], newPrice);
+        const prevDayPrice = getPreviousDayPrice(newHistory) ?? p.previousPrice;
         return {
           ...p,
-          previousPrice: p.currentPrice !== newPrice ? p.currentPrice : p.previousPrice,
+          previousPrice: prevDayPrice,
           currentPrice: newPrice,
           lowestPrice: Math.min(p.lowestPrice, newPrice),
           lastChecked: new Date().toISOString(),
           priceHistory: newHistory,
+          status: prevDayPrice !== null && newPrice < prevDayPrice ? 'alert' : 'active',
         } as Product;
       }
       return p;
@@ -944,6 +959,7 @@ export default function App() {
         onSignIn={handleSignIn}
         onSignOut={handleSignOut}
         isLoggingIn={isLoggingIn}
+        isAuthInitializing={isAuthInitializing}
         productCount={products.length}
         alertCount={alertProductsCount}
         sheetConnected={!!sheetInfo}
@@ -952,13 +968,14 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Google Auth Prompt Banner if not signed in */}
-        {!user && <GoogleAuthBanner onSignIn={handleSignIn} isLoggingIn={isLoggingIn} />}
+        {/* Google Auth Prompt Banner if not signed in (hidden during auth initialization to avoid flicker) */}
+        {!isAuthInitializing && !user && <GoogleAuthBanner onSignIn={handleSignIn} isLoggingIn={isLoggingIn} />}
 
         {/* Top Control Panel */}
         <AgentControlPanel
           onRunAgent={runServerAgentRun}
           isRunning={isAgentRunning}
+          isInitializing={isAuthInitializing || !isInitialSyncDone}
           checkProgress={checkProgress}
           onOpenAddModal={() => setIsAddModalOpen(true)}
           onOpenBackupModal={() => setIsBackupModalOpen(true)}

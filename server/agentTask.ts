@@ -240,98 +240,125 @@ function recordDailyLowestPrice(
   }
 }
 
+// Get previous day price helper
+function getPreviousDayPrice(
+  history: Array<{ timestamp: string; price: number }>,
+  referenceDateStr?: string
+): number | null {
+  if (!history || history.length === 0) return null;
+  const targetDateStr = referenceDateStr
+    ? referenceDateStr.split('T')[0]
+    : new Date().toISOString().split('T')[0];
+
+  const previousDayEntries = history.filter((item) => {
+    const itemDateStr = item.timestamp.split('T')[0];
+    return itemDateStr < targetDateStr;
+  });
+
+  if (previousDayEntries.length === 0) return null;
+  return previousDayEntries[previousDayEntries.length - 1].price;
+}
+
 // Perform full automated price check on server
 export async function runServerAgentCheck(): Promise<AgentServerState> {
   if (state.isRunning) return state;
   state.isRunning = true;
   state.lastRunTime = new Date().toISOString();
-  addServerLog('info', 'Automated server agent execution started (background check)...');
+  addServerLog('info', 'Automated server agent execution started with controlled concurrency (4 parallel workers)...');
 
   const priceDropsToSend: Array<{ title: string; oldPrice: number; newPrice: number; currency: string; url: string }> = [];
-  const updatedProducts: ServerProduct[] = [];
+  const productsToProcess = [...state.products];
+  const updatedProductsMap = new Map<number, ServerProduct>();
 
-  let productIndex = 0;
-  for (const product of state.products) {
-    if (productIndex > 0) {
-      // Polite delay between scrapes to avoid rate-limiting stores
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    productIndex++;
+  const CONCURRENCY_LIMIT = 4;
+  let nextProductIndex = 0;
 
-    try {
-      addServerLog('info', `Background scraping product: ${product.title}...`);
-      const scraped = await scrapeProductDetails(product.url);
+  const worker = async () => {
+    while (nextProductIndex < productsToProcess.length) {
+      const idx = nextProductIndex++;
+      const product = productsToProcess[idx];
 
-      if (scraped.price && scraped.price > 0) {
-        const currentP = scraped.price;
-        const prevP = product.currentPrice;
-        const lowestP = Math.min(product.lowestPrice || currentP, currentP);
-        const highestP = Math.max(product.highestPrice || currentP, currentP);
+      try {
+        addServerLog('info', `Background scraping product [${idx + 1}/${productsToProcess.length}]: ${product.title}...`);
+        const scraped = await scrapeProductDetails(product.url);
 
-        const newHistory = recordDailyLowestPrice(product.priceHistory || [], currentP);
+        if (scraped.price && scraped.price > 0) {
+          const currentP = scraped.price;
+          const lowestP = Math.min(product.lowestPrice || currentP, currentP);
+          const highestP = Math.max(product.highestPrice || currentP, currentP);
 
-        // Check price drop alert thresholds
-        if (state.emailSettings?.enabled && state.emailSettings?.recipientEmail) {
-          const dropPercent = prevP > 0 ? ((prevP - currentP) / prevP) * 100 : 0;
-          const minDropReq = state.emailSettings.minDropPercent || 5;
+          const newHistory = recordDailyLowestPrice(product.priceHistory || [], currentP);
+          const prevP = getPreviousDayPrice(newHistory) ?? product.previousPrice;
 
-          const qualifiesDrop = currentP < prevP && dropPercent >= minDropReq;
-          const qualifiesTarget = product.targetPrice && currentP <= product.targetPrice;
+          // Check price drop alert thresholds compared to price from last day
+          if (state.emailSettings?.enabled && state.emailSettings?.recipientEmail) {
+            const dropPercent = prevP !== null && prevP > 0 ? ((prevP - currentP) / prevP) * 100 : 0;
+            const minDropReq = state.emailSettings.minDropPercent || 5;
 
-          let triggerEmail = false;
-          if (state.emailSettings.alertOnlyOnTargetHit) {
-            if (qualifiesTarget) triggerEmail = true;
-          } else if (state.emailSettings.alertOnPriceDrop) {
-            if (qualifiesDrop || qualifiesTarget) triggerEmail = true;
+            const qualifiesDrop = prevP !== null && currentP < prevP && dropPercent >= minDropReq;
+            const qualifiesTarget = product.targetPrice && currentP <= product.targetPrice;
+
+            let triggerEmail = false;
+            if (state.emailSettings.alertOnlyOnTargetHit) {
+              if (qualifiesTarget) triggerEmail = true;
+            } else if (state.emailSettings.alertOnPriceDrop) {
+              if (qualifiesDrop || qualifiesTarget) triggerEmail = true;
+            }
+
+            if (triggerEmail && prevP !== null) {
+              priceDropsToSend.push({
+                title: scraped.title || product.title,
+                oldPrice: prevP,
+                newPrice: currentP,
+                currency: scraped.currency || product.currency || 'zł',
+                url: scraped.url || product.url,
+              });
+            }
           }
 
-          if (triggerEmail) {
-            priceDropsToSend.push({
-              title: scraped.title || product.title,
-              oldPrice: prevP,
-              newPrice: currentP,
-              currency: scraped.currency || product.currency || 'zł',
-              url: scraped.url || product.url,
-            });
-          }
+          updatedProductsMap.set(idx, {
+            ...product,
+            url: scraped.url || product.url,
+            title: scraped.title || product.title,
+            currentPrice: currentP,
+            previousPrice: prevP,
+            lowestPrice: lowestP,
+            highestPrice: highestP,
+            currency: scraped.currency || product.currency || 'zł',
+            inStock: scraped.inStock !== undefined ? scraped.inStock : true,
+            imageUrl: scraped.imageUrl || product.imageUrl,
+            lastChecked: new Date().toISOString(),
+            needsManualPrice: scraped.needsManualPrice,
+            scrapeWarning: scraped.scrapeWarning,
+            priceHistory: newHistory,
+          });
+
+          addServerLog(
+            'success',
+            `Scraped "${scraped.title || product.title}": ${currentP} ${scraped.currency || 'zł'}${
+              scraped.fetchedFromCeneo ? ' (via Ceneo)' : ''
+            }`
+          );
+        } else {
+          updatedProductsMap.set(idx, {
+            ...product,
+            lastChecked: new Date().toISOString(),
+            scrapeWarning: scraped.scrapeWarning || 'Failed to read price',
+          });
+          addServerLog('warning', `Price check for "${product.title}" returned no price or needs manual entry.`);
         }
-
-        updatedProducts.push({
-          ...product,
-          url: scraped.url || product.url,
-          title: scraped.title || product.title,
-          currentPrice: currentP,
-          previousPrice: prevP !== currentP ? prevP : product.previousPrice,
-          lowestPrice: lowestP,
-          highestPrice: highestP,
-          currency: scraped.currency || product.currency || 'zł',
-          inStock: scraped.inStock !== undefined ? scraped.inStock : true,
-          imageUrl: scraped.imageUrl || product.imageUrl,
-          lastChecked: new Date().toISOString(),
-          needsManualPrice: scraped.needsManualPrice,
-          scrapeWarning: scraped.scrapeWarning,
-          priceHistory: newHistory,
-        });
-
-        addServerLog(
-          'success',
-          `Scraped "${scraped.title || product.title}": ${currentP} ${scraped.currency || 'zł'}${
-            scraped.fetchedFromCeneo ? ' (via Ceneo)' : ''
-          }`
-        );
-      } else {
-        updatedProducts.push({
-          ...product,
-          lastChecked: new Date().toISOString(),
-          scrapeWarning: scraped.scrapeWarning || 'Failed to read price',
-        });
-        addServerLog('warning', `Price check for "${product.title}" returned no price or needs manual entry.`);
+      } catch (err: any) {
+        updatedProductsMap.set(idx, product);
+        addServerLog('error', `Error checking product "${product.title}": ${err.message}`);
       }
-    } catch (err: any) {
-      updatedProducts.push(product);
-      addServerLog('error', `Error checking product "${product.title}": ${err.message}`);
     }
-  }
+  };
+
+  const activeWorkerCount = Math.min(CONCURRENCY_LIMIT, productsToProcess.length);
+  await Promise.all(Array.from({ length: activeWorkerCount }, () => worker()));
+
+  // Reconstruct updated products array in original order
+  const updatedProducts: ServerProduct[] = productsToProcess.map((p, idx) => updatedProductsMap.get(idx) || p);
 
   state.products = updatedProducts;
 

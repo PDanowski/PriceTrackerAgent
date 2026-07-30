@@ -7,6 +7,7 @@ interface HeaderProps {
   onSignIn: () => void;
   onSignOut: () => void;
   isLoggingIn: boolean;
+  isAuthInitializing?: boolean;
   productCount: number;
   alertCount: number;
   sheetConnected: boolean;
@@ -18,6 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSignIn,
   onSignOut,
   isLoggingIn,
+  isAuthInitializing = false,
   productCount,
   alertCount,
   sheetConnected,
@@ -69,7 +71,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* User Google Auth */}
         <div className="flex items-center space-x-3">
-          {user ? (
+          {isAuthInitializing ? (
+            <div className="w-28 h-8 rounded-xl bg-slate-800 animate-pulse border border-slate-700/60" />
+          ) : user ? (
             <div className="flex items-center space-x-2 bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-700">
               {user.photoURL ? (
                 <img src={user.photoURL} alt={user.displayName || 'User'} className="w-6 h-6 rounded-full" />

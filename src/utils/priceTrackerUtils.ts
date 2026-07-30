@@ -24,6 +24,32 @@ export const recordDailyLowestPrice = (
   }
 };
 
+/**
+ * Returns the recorded price from the last recorded day prior to the reference date.
+ * Strictly ignores intra-day price changes so trends compare against the price from last day.
+ */
+export const getPreviousDayPrice = (
+  history: Array<{ timestamp: string; price: number }>,
+  referenceDateStr?: string
+): number | null => {
+  if (!history || history.length === 0) return null;
+
+  const targetDateStr = referenceDateStr
+    ? referenceDateStr.split('T')[0]
+    : new Date().toISOString().split('T')[0];
+
+  const previousDayEntries = history.filter((item) => {
+    const itemDateStr = item.timestamp.split('T')[0];
+    return itemDateStr < targetDateStr;
+  });
+
+  if (previousDayEntries.length === 0) {
+    return null;
+  }
+
+  return previousDayEntries[previousDayEntries.length - 1].price;
+};
+
 export const buildPriceDropEmailHtml = (
   drops: Array<{ title: string; oldPrice: number; newPrice: number; currency: string; url: string }>
 ): string => {

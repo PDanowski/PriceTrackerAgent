@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanTitleFromUrl, parsePriceString } from '../server/scraper';
+import { cleanTitleFromUrl, parsePriceString, extractSkuFromUrl } from '../server/scraper';
 
 describe('Scraper & URL Helper Utilities', () => {
   it('parses various price string formats accurately', () => {
@@ -11,6 +11,12 @@ describe('Scraper & URL Helper Utilities', () => {
     expect(parsePriceString('1499.00')).toBe(1499);
     expect(parsePriceString(299.5)).toBe(299.5);
   });
+
+  it('extracts SKUs from product URLs', () => {
+    expect(extractSkuFromUrl('https://www.adidas.pl/buty-cloudfoam-flex-rapidfit/HP6993.html?cm_mmc=AdieSEM')).toBe('HP6993');
+    expect(extractSkuFromUrl('https://www.amazon.pl/Apple-iPhone-15-128GB-Czarny/dp/B0CHX1P7P4')).toBe('B0CHX1P7P4');
+  });
+
   it('extracts clean title from Ceneo search URL', () => {
     const url = 'https://www.ceneo.pl/szukaj-sony+wh+1000xm5.htm';
     const title = cleanTitleFromUrl(url);
@@ -23,10 +29,10 @@ describe('Scraper & URL Helper Utilities', () => {
     expect(title).toBe('Sluchawki Sony Wh 1000xm5 Czarne');
   });
 
-  it('extracts clean title from Adidas product URL slug', () => {
+  it('extracts clean title with SKU from Adidas product URL slug', () => {
     const url = 'https://www.adidas.pl/buty-cloudfoam-flex-rapidfit/HP6993.html?cm_mmc=AdieSEM';
     const title = cleanTitleFromUrl(url);
-    expect(title).toBe('Buty Cloudfoam Flex Rapidfit');
+    expect(title).toBe('Buty Cloudfoam Flex Rapidfit HP6993');
   });
 
   it('extracts clean title from Amazon product URL slug', () => {

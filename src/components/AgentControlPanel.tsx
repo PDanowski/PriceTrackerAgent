@@ -5,6 +5,7 @@ import { COLOR_BADGES, CheckProgress } from '../types';
 interface AgentControlPanelProps {
   onRunAgent: () => void;
   isRunning: boolean;
+  isInitializing?: boolean;
   checkProgress?: CheckProgress | null;
   onOpenAddModal: () => void;
   onOpenBackupModal: () => void;
@@ -20,6 +21,7 @@ interface AgentControlPanelProps {
 export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
   onRunAgent,
   isRunning,
+  isInitializing = false,
   checkProgress,
   onOpenAddModal,
   onOpenBackupModal,
@@ -48,16 +50,18 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={onRunAgent}
-            disabled={isRunning}
+            disabled={isRunning || isInitializing}
             className="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed text-sm"
           >
-            {isRunning ? (
+            {isRunning || isInitializing ? (
               <Loader2 className="w-4 h-4 animate-spin text-white" />
             ) : (
               <Play className="w-4 h-4 fill-white" />
             )}
             <span>
-              {isRunning
+              {isInitializing
+                ? 'Inicjalizacja...'
+                : isRunning
                 ? checkProgress
                   ? `Sprawdzanie (${checkProgress.current}/${checkProgress.total} - ${Math.round((Math.min(checkProgress.current, checkProgress.total) / (checkProgress.total || 1)) * 100)}%)`
                   : 'Uruchamianie sprawdzania...'

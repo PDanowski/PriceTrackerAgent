@@ -62,6 +62,29 @@ export function parsePriceString(raw: string | number): number {
   return isNaN(val) ? 0 : val;
 }
 
+// Helper to extract SKU / Article Code from product URL
+export function extractSkuFromUrl(urlStr: string): string | null {
+  try {
+    const u = new URL(urlStr);
+    // Adidas style: /HP6993.html or /hp6993.html
+    const matchAdidas = u.pathname.match(/\/([A-Za-z0-9]{5,12})\.html?/i);
+    if (matchAdidas && matchAdidas[1] && !/^(product|index|item|details|shop|catalog)$/i.test(matchAdidas[1])) {
+      return matchAdidas[1].toUpperCase();
+    }
+    // Amazon ASIN: /dp/B0CHX1P7P4 or /gp/product/B0CHX1P7P4
+    const matchAsin = u.pathname.match(/\/(?:dp|product|gp\/product)\/([A-Z0-9]{10})/i);
+    if (matchAsin && matchAsin[1]) {
+      return matchAsin[1].toUpperCase();
+    }
+    // Query param sku= / article= / pid= / id=
+    const skuParam = u.searchParams.get('sku') || u.searchParams.get('article') || u.searchParams.get('pid') || u.searchParams.get('item');
+    if (skuParam && skuParam.length >= 4) {
+      return skuParam.toUpperCase();
+    }
+  } catch {}
+  return null;
+}
+
 // Helper to extract clean human-readable title from URL path slug
 export function cleanTitleFromUrl(urlStr: string): string {
   try {
@@ -105,12 +128,16 @@ export function cleanTitleFromUrl(urlStr: string): string {
       const segs = u.pathname.split('/').filter(Boolean);
       if (segs.length >= 2) {
         const titleSeg = segs[segs.length - 2];
+        const lastSeg = segs[segs.length - 1].replace(/\.html?$/i, '');
         const cleaned = decodeURIComponent(titleSeg)
-          .replace(/\.html?$/i, '')
           .replace(/[-_]/g, ' ')
           .trim();
         if (cleaned && cleaned.length > 2 && !/^\d+$/.test(cleaned)) {
-          return cleaned.split(' ').map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : '')).join(' ');
+          const formatted = cleaned.split(' ').map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : '')).join(' ');
+          if (lastSeg && /^[A-Z0-9]{4,10}$/i.test(lastSeg) && !formatted.toUpperCase().includes(lastSeg.toUpperCase())) {
+            return `${formatted} ${lastSeg.toUpperCase()}`;
+          }
+          return formatted;
         }
       }
     }
@@ -272,9 +299,11 @@ export async function scrapeProductDetails(url: string) {
   let scrapedInStock = true;
   let scrapedImage = '';
 
+  const targetSku = extractSkuFromUrl(targetFetchUrl);
+
   if (html) {
     const $clean = cheerio.load(html);
-    $clean('aside, footer, nav, .recommended, .suggestions, .suggested-products, .related-products, .similar-items, #recommendations, .cross-sell, .up-sell, [data-component="carousel"]').remove();
+    $clean('aside, footer, nav, .recommended, .suggestions, .suggested-products, .related-products, .similar-items, #recommendations, .cross-sell, .up-sell, [data-component="carousel"], [data-auto-id="color-picker"], [data-auto-id="color-variations"], [class*="color-variation"], [class*="color_variation"], [class*="colour-variation"], [class*="variant-picker"], [class*="other-colors"], .product-variants, .variant-selector, .available-colors, .color-swatches, .swatches, .other-variants').remove();
     $clean('.a-text-price, .a-text-strike, del, s, .strike, .old-price, .basisPrice, .original-price, [data-a-stripe], .listPrice, #listPrice, #priceblock_listprice, .was-price, .rrp-price').remove();
 
     const resolveUrl = (imgSrc: string | undefined): string => {
@@ -391,7 +420,28 @@ export async function scrapeProductDetails(url: string) {
       return '';
     };
 
-    // 1. Try JSON-LD schema on clean markup
+    // 1. Try targetSku-specific JSON price extraction in raw HTML scripts (e.g. Adidas window.INITIAL_STATE)
+    if (targetSku && html) {
+      const skuRegex1 = new RegExp(`"${targetSku}"[\\s\\S]{1,600}?"(?:unit_sale_price|sale_price|salePrice|priceValue|price|amount)"\\s*:\\s*"?([\\d\\.\\,]+)"?`, 'i');
+      const match1 = html.match(skuRegex1);
+      if (match1 && match1[1]) {
+        const val = parsePriceString(match1[1]);
+        if (val > 0 && val < 100000) {
+          scrapedPrice = val;
+        }
+      } else {
+        const skuRegex2 = new RegExp(`"(?:unit_sale_price|sale_price|salePrice|priceValue|price|amount)"\\s*:\\s*"?([\\d\\.\\,]+)"?[\\s\\S]{1,600}?"${targetSku}"`, 'i');
+        const match2 = html.match(skuRegex2);
+        if (match2 && match2[1]) {
+          const val = parsePriceString(match2[1]);
+          if (val > 0 && val < 100000) {
+            scrapedPrice = val;
+          }
+        }
+      }
+    }
+
+    // 2. Try JSON-LD schema on clean markup
     $clean('script[type="application/ld+json"]').each((_, el) => {
       try {
         const content = $clean(el).contents().text();
@@ -427,10 +477,25 @@ export async function scrapeProductDetails(url: string) {
                 ? offers.offers
                 : [offers];
 
-              for (const offer of offerList) {
+              // Check if any offer explicitly matches targetSku
+              let matchedOffer: any = null;
+              if (targetSku) {
+                matchedOffer = offerList.find((off: any) => {
+                  if (!off) return false;
+                  const offSku = String(off.sku || off.productID || off.identifier || off.mpn || off.url || '').toUpperCase();
+                  return offSku.includes(targetSku);
+                });
+              }
+
+              const candidateOffers = matchedOffer ? [matchedOffer] : offerList;
+
+              for (const offer of candidateOffers) {
                 if (!offer) continue;
-                const rawPrice = offer.price ?? offer.lowPrice ?? offer.highPrice ?? offer.priceAmount;
-                if (rawPrice !== undefined && rawPrice !== null && (!scrapedPrice || scrapedPrice === 0)) {
+                const isAggregateWithoutSkuMatch = !matchedOffer && (offer['@type'] === 'AggregateOffer' || (offer.lowPrice !== undefined && offer.price === undefined));
+                
+                const rawPrice = offer.price ?? offer.priceAmount ?? (isAggregateWithoutSkuMatch ? null : offer.lowPrice) ?? offer.lowPrice ?? offer.highPrice;
+
+                if (rawPrice !== undefined && rawPrice !== null && (!scrapedPrice || scrapedPrice === 0 || matchedOffer)) {
                   const parsedP = parsePriceString(rawPrice);
                   if (parsedP > 0) {
                     scrapedPrice = parsedP;
@@ -456,7 +521,7 @@ export async function scrapeProductDetails(url: string) {
       } catch {}
     });
 
-    // 2. OpenGraph & Meta currency / title / image
+    // 3. OpenGraph & Meta currency / title / image
     if (!scrapedTitle) {
       scrapedTitle =
         $clean('meta[property="og:title"]').attr('content') ||
@@ -500,12 +565,16 @@ export async function scrapeProductDetails(url: string) {
       }
     }
 
-    // 3. Cheerio DOM selector heuristics
+    // 4. Cheerio DOM selector heuristics
     if (parsedUrl.hostname.includes('adidas.')) {
       const adzTitle = $clean('[data-auto-id="product-title"], h1.product-title, h1').first().text().trim();
       if (adzTitle && adzTitle.length > 2) {
         scrapedTitle = adzTitle;
       }
+
+      // Contextually query main product info container first to avoid color picker or carousel prices
+      const $mainContainer = $clean('[data-auto-id="product-information"], [data-auto-id="pdp-main-content"], #main-content, main, #product-info, .pdp-main').first();
+      const $context = $mainContainer.length > 0 ? $mainContainer : $clean('body');
 
       const adidasPriceSelectors = [
         '[data-auto-id="product-price"]',
@@ -518,8 +587,8 @@ export async function scrapeProductDetails(url: string) {
         '.price___1Tf20',
       ];
       for (const sel of adidasPriceSelectors) {
-        if (scrapedPrice > 0) break;
-        $clean(sel).each((_, el) => {
+        if (scrapedPrice > 0 && targetSku) break;
+        $context.find(sel).each((_, el) => {
           const txt = $clean(el).text().trim();
           if (txt) {
             const m = txt.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
@@ -534,7 +603,7 @@ export async function scrapeProductDetails(url: string) {
         });
       }
 
-      if (!scrapedPrice || scrapedPrice === 0) {
+      if ((!scrapedPrice || scrapedPrice === 0) && !targetSku) {
         const adidasRegexes = [
           /"unit_sale_price"\s*:\s*\[?"?([\d\.\,]+)"?/i,
           /"sale_price"\s*:\s*"?([\d\.\,]+)"?/i,
@@ -730,13 +799,19 @@ export async function scrapeProductDetails(url: string) {
     }
   }
 
-  // 4. Gemini AI Fallback if price or currency missing or fetch blocked
+  // 4. Gemini AI Fallback ONLY if price or title missing or fetch blocked
   const ai = getGeminiClient();
-  if ((!scrapedPrice || !scrapedCurrency || !scrapedTitle || fetchError) && ai) {
+  const needsAiFallback = (!scrapedPrice || scrapedPrice === 0 || !scrapedTitle || fetchError);
+  if (needsAiFallback && ai) {
     try {
-      const bodySnippet = html ? cheerio.load(html)('main, #main, #content, body').text().slice(0, 4000) : '';
-      const prompt = `Extract product details for main item at URL "${parsedUrl.href}".
-CRITICAL INSTRUCTION: Identify ONLY the actual buying price to pay (sale price) for the MAIN product. Do NOT extract strikethrough list prices, recommended RRP, unit prices, or shipping costs.
+      let bodySnippet = '';
+      if (html) {
+        const $snippet = cheerio.load(html);
+        $snippet('script, style, noscript, svg, nav, footer, header').remove();
+        bodySnippet = $snippet('main, #main, #content, body').text().replace(/\s+/g, ' ').trim().slice(0, 2500);
+      }
+      const prompt = `Extract product details for main item at URL "${parsedUrl.href}"${targetSku ? ` (Specific SKU/Article code: ${targetSku})` : ''}.
+CRITICAL INSTRUCTION: Identify ONLY the actual buying price to pay (sale price) for the EXACT product variant / colorway referenced in the URL${targetSku ? ` (SKU: ${targetSku})` : ''}. Do NOT extract prices of other color options, variant pickers, strikethrough list prices, recommended RRP, unit prices, or shipping costs.
 Parse the exact currency symbol or code (e.g. "zł", "PLN", "€", "$", "£", "CHF") as displayed on the webpage.
 
 Page text snippet:
@@ -769,13 +844,17 @@ Page text snippet:
         required: ['title', 'price', 'currency', 'inStock'],
       };
 
-      // Try models in sequence if rate-limited (429)
-      const modelsToTry = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-3.6-flash'];
+      // Try supported models in sequence if rate-limited (429), unavailable (404), or timing out
+      const modelsToTry = ['gemini-3.6-flash', 'gemini-3.6-pro', 'gemini-2.5-flash-lite'];
       let textResp = '';
 
       for (const modelName of modelsToTry) {
         try {
-          const response = await ai.models.generateContent({
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Gemini API request timeout (4s exceeded)')), 4000)
+          );
+
+          const apiPromise = ai.models.generateContent({
             model: modelName,
             contents: prompt,
             config: {
@@ -783,12 +862,22 @@ Page text snippet:
               responseSchema: schema,
             },
           });
+
+          const response = await Promise.race([apiPromise, timeoutPromise]);
           textResp = response.text?.trim() || '';
           if (textResp) break;
         } catch (modelErr: any) {
           const errText = modelErr?.message || String(modelErr);
           if (errText.includes('429') || errText.includes('RESOURCE_EXHAUSTED') || errText.includes('quota')) {
             console.warn(`⚠️ Gemini model '${modelName}' quota/rate limit reached (429). Trying fallback model...`);
+            continue;
+          }
+          if (errText.includes('404') || errText.includes('NOT_FOUND') || errText.includes('no longer available')) {
+            console.warn(`⚠️ Gemini model '${modelName}' unavailable or deprecated (404). Trying next model...`);
+            continue;
+          }
+          if (errText.includes('timeout')) {
+            console.warn(`⚠️ Gemini model '${modelName}' request timed out (4s). Trying next model or standard fallback...`);
             continue;
           }
           throw modelErr;
@@ -855,6 +944,10 @@ Page text snippet:
       .replace(/\s*-\s*adidas.*$/i, '')
       .replace(/^adidas\s+/i, '')
       .trim();
+  }
+
+  if (targetSku && scrapedTitle && !scrapedTitle.toUpperCase().includes(targetSku)) {
+    scrapedTitle = `${scrapedTitle} ${targetSku}`;
   }
 
   const isBotBlocked = isAccessDeniedOrBlocked || !!fetchError || !html || html.length < 500 || (scrapedPrice === 0 && (html.toLowerCase().includes('captcha') || html.toLowerCase().includes('robot check')));

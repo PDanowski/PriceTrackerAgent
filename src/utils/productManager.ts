@@ -1,5 +1,5 @@
 import { Product } from '../types';
-import { recordDailyLowestPrice } from './priceTrackerUtils';
+import { recordDailyLowestPrice, getPreviousDayPrice } from './priceTrackerUtils';
 
 export const PRODUCTS_STORAGE_KEY = 'price_tracker_products';
 export const PRODUCTS_BACKUP_STORAGE_KEY = 'price_tracker_products_backup';
@@ -36,6 +36,7 @@ export function updateProductPrice(
 
     const newPrice = scrapedData.price > 0 ? scrapedData.price : p.currentPrice;
     const newHistory = recordDailyLowestPrice(p.priceHistory || [], newPrice);
+    const prevDayPrice = getPreviousDayPrice(newHistory) ?? p.previousPrice;
     const validTitle =
       scrapedData.title &&
       !scrapedData.title.includes('403') &&
@@ -47,13 +48,13 @@ export function updateProductPrice(
       ...p,
       title: validTitle,
       imageUrl: scrapedData.imageUrl || p.imageUrl,
-      previousPrice: p.currentPrice !== newPrice ? p.currentPrice : p.previousPrice,
+      previousPrice: prevDayPrice,
       currentPrice: newPrice,
       lowestPrice: Math.min(p.lowestPrice, newPrice),
       inStock: scrapedData.inStock !== false,
       lastChecked: new Date().toISOString(),
       priceHistory: newHistory,
-      status: newPrice < p.currentPrice ? 'alert' : 'active',
+      status: prevDayPrice !== null && newPrice < prevDayPrice ? 'alert' : 'active',
     };
   });
 }

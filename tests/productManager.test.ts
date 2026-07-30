@@ -49,7 +49,7 @@ describe('Product Manager Suite', () => {
         currency: 'zł',
         inStock: true,
         lastChecked: new Date().toISOString(),
-        priceHistory: [{ timestamp: new Date().toISOString(), price: 1499 }],
+        priceHistory: [{ timestamp: new Date(Date.now() - 86400000).toISOString(), price: 1499 }],
         status: 'active',
       },
     ];
