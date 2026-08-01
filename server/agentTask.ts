@@ -85,7 +85,7 @@ async function initPersistentState() {
     if (fs.existsSync(DATA_FILE)) {
       const raw = fs.readFileSync(DATA_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
-      state = { ...state, ...parsed };
+      state = { ...state, ...parsed, isRunning: false };
       if (!Array.isArray(state.products)) {
         state.products = [];
       }
@@ -102,6 +102,7 @@ async function initPersistentState() {
       state = {
         ...state,
         ...firestoreData,
+        isRunning: false,
         products: Array.isArray(firestoreData.products) ? firestoreData.products : (state.products || []),
         emailSettings: { ...state.emailSettings, ...(firestoreData.emailSettings || {}) },
         sheetInfo: firestoreData.sheetInfo !== undefined ? firestoreData.sheetInfo : state.sheetInfo,

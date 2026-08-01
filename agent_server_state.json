@@ -1,303 +1,787 @@
 {
   "scheduleInterval": "3hr",
-  "lastRunTime": "2026-07-25T09:41:16.287Z",
-  "nextRunTime": "2026-07-24T22:56:12.879Z",
-  "isRunning": true,
+  "lastRunTime": "2026-08-01T09:47:24.131Z",
+  "nextRunTime": "2026-08-01T12:47:44.487Z",
+  "isRunning": false,
   "products": [
     {
-      "title": "BUTY CLOUDFOAM FLEX RAPIDFIT",
-      "url": "https://www.adidas.pl/buty-cloudfoam-flex-rapidfit/HP6993.html?cm_mmc=AdieSEM_PLA_Google-_-adiSEM_EU_PL_SEA_Shopping_NA_LF_AlwaysOn_SA360_BRA_BRA_CrossCategory_NA_HighStock-NA-ROI-Polish-NA-PSPB_NA-_-Branded+High+Stock+-+unisex-_-PRODUCT_GROUP&cm_mmca1=PL&cm_mmca2=&18470258621&ds_agid=174228401008&af_reengagement_window=30d&is_retargeting=true&pid=googleadwords_temp&c=adiSEM_EU_PL_SEA_Shopping_NA_LF_AlwaysOn_SA360_BRA_BRA_CrossCategory_NA_HighStock-NA-ROI-Polish-NA-PSPB_NA&af_channel=Shopping_Search&adicl_gclid=CjwKCAjwmozTBhAeEiwAkEGZzlyluC2MXw913lBG_VaZJfVphv1wV5T_sAVAK4OmH10PeCkP2AowcRoCcbcQAvD_BwE&gclsrc=aw.ds&gad_source=1&gad_campaignid=18470258621&gbraid=0AAAAADwBzxp6pnS7Xy9FnFxCxDdmaoDQK&gclid=CjwKCAjwmozTBhAeEiwAkEGZzlyluC2MXw913lBG_VaZJfVphv1wV5T_sAVAK4OmH10PeCkP2AowcRoCcbcQAvD_BwE",
-      "currentPrice": 279,
-      "previousPrice": 279,
-      "lowestPrice": 279,
+      "title": "Chicco Lóżeczkiem Montessori Regulowana Cyrkulacja B0DQ2LNRQK",
+      "url": "https://www.amazon.pl/Chicco-l%C3%B3%C5%BCeczkiem-Montessori-regulowana-cyrkulacja/dp/B0DQ2LNRQK/ref=asc_df_B0DQ2LNRQK?mcid=a9544af8cd943bad86119f6223e06e5b&tag=plshogostdsp-21&linkCode=df0&hvadid=719814503993&hvpos=&hvnetw=g&hvrand=4483544114159538057&hvpone=&hvptwo=&hvqmt=&hvdev=m&hvdvcmdl=&hvlocint=&hvlocphy=9067412&hvtargid=pla-2393636366586&psc=1&hvocijid=4483544114159538057-B0DQ2LNRQK-&hvexpln=0&language=pl_PL&gad_source=1",
+      "currentPrice": 1319.83,
+      "previousPrice": 1319.83,
+      "lowestPrice": 1319.83,
       "currency": "zł",
-      "imageUrl": "https://www.adidas.pl/buty-cloudfoam-flex-rapidfit/q_auto/1c180b73f2804528b098d5df18ed4574_9366/BUTY_CLOUDFOAM_FLEX_RAPIDFIT_Czern_HP6993_01_00_standard.jpg",
+      "imageUrl": "https://www.amazon.pl/Chicco-l%C3%B3%C5%BCeczkiem-Montessori-regulowana-cyrkulacja/dp/B0DQ2LNRQK/T1_.jpg",
       "inStock": true,
-      "lastChecked": "2026-07-25T09:51:41.469Z",
+      "lastChecked": "2026-08-01T09:47:33.171Z",
       "colorBadge": "blue",
-      "id": "prod-1784926237456",
+      "id": "prod-1785497755380",
       "status": "active",
       "priceHistory": [
         {
-          "timestamp": "2026-07-24T20:50:37.456Z",
-          "price": 279
+          "timestamp": "2026-07-31T11:35:55.380Z",
+          "price": 1319.83
+        },
+        {
+          "timestamp": "2026-08-01T09:47:33.171Z",
+          "price": 1319.83
+        }
+      ],
+      "highestPrice": 1319.83,
+      "needsManualPrice": false
+    },
+    {
+      "colorBadge": "blue",
+      "imageUrl": "https://media2.castorama.pl/is/image/CastoramaPL/donica-verve-plastikowa-kwadratowa-43-cm-szara~5063022562937_01c?$MOB_PREV$&amp;$width=284&amp;$height=284",
+      "inStock": true,
+      "priceHistory": [
+        {
+          "price": 148,
+          "timestamp": "2026-07-26T16:03:52.129Z"
+        },
+        {
+          "timestamp": "2026-07-27T06:01:53.655Z",
+          "price": 148
+        },
+        {
+          "timestamp": "2026-07-28T05:40:11.270Z",
+          "price": 148
+        },
+        {
+          "timestamp": "2026-07-29T07:08:33.553Z",
+          "price": 148
+        },
+        {
+          "timestamp": "2026-07-30T12:04:01.009Z",
+          "price": 148
+        },
+        {
+          "timestamp": "2026-07-31T06:23:05.175Z",
+          "price": 148
+        },
+        {
+          "timestamp": "2026-08-01T09:47:22.132Z",
+          "price": 148
+        }
+      ],
+      "previousPrice": 148,
+      "url": "https://www.castorama.pl/donica-verve-plastikowa-kwadratowa-43-cm-szara/5063022562937_CAPL.prd",
+      "currency": "zł",
+      "status": "active",
+      "id": "prod-1785081832129",
+      "currentPrice": 148,
+      "lastChecked": "2026-08-01T09:47:26.057Z",
+      "title": "Donica Verve plastikowa kwadratowa 43 cm szara",
+      "lowestPrice": 148,
+      "highestPrice": 148,
+      "needsManualPrice": false
+    },
+    {
+      "id": "prod-1785004848055",
+      "previousPrice": 299,
+      "url": "https://www.adidas.pl/buty-cloudfoam-flex-smart-casual/KI4916.html?cm_mmc1=MULTI&&cm_mmc=AdiPaidSocial_FBIG-_-CrossCategory-_-Darkpost-_-2D-_-Carousel-_-dv:eCOM-_-cn:AlwaysOn_NA-_-pc:CrossCategory&cm_mmc2=adidas-EMEA-eCOM-PaidSocial-FBIG-CrossCategory-ASC_NA-MULTI-AlwaysOn-2503-4451-CP2SZR0-Global-NA-GROUP3&media_type=image&fbclid=IwYW9leATR4DxwZG9mBmV4dG4DYWVtATAAYWRpZAGrM1zFj5lLc3J0YwZhcHBfaWQPNTY3MDY3MzQzMzUyNDI3AAEeawKTP1tNo_L1VntqGsTILtyuNbz8iaTB2mUwjIZyImXzQdXqf1awi7LEZzA_aem_wyWJtcDDr0PX3u_NFFAlZA&utm_source=facebook&utm_medium=paid&campaign_id=120246208170710363&ad_id=120246208171680363",
+      "priceHistory": [
+        {
+          "timestamp": "2026-07-25T18:40:48.055Z",
+          "price": 299
+        },
+        {
+          "price": 299,
+          "timestamp": "2026-07-26T07:31:24.222Z"
+        },
+        {
+          "timestamp": "2026-07-27T06:01:53.794Z",
+          "price": 299
+        },
+        {
+          "timestamp": "2026-07-28T05:40:11.551Z",
+          "price": 299
+        },
+        {
+          "timestamp": "2026-07-29T07:08:33.858Z",
+          "price": 299
+        },
+        {
+          "timestamp": "2026-07-30T12:04:01.247Z",
+          "price": 299
+        },
+        {
+          "timestamp": "2026-07-31T06:23:06.802Z",
+          "price": 299
+        },
+        {
+          "timestamp": "2026-08-01T09:47:21.706Z",
+          "price": 299
+        }
+      ],
+      "imageUrl": "https://www.adidas.pl/buty-cloudfoam-flex-smart-casual/q_auto/1cee8b5f34ed4e459d297888e1593f46_9366/BUTY_CLOUDFOAM_FLEX_SMART_CASUAL_Czern_KI4916_HM1.jpg",
+      "title": "BUTY CLOUDFOAM FLEX SMART CASUAL KI4916",
+      "inStock": true,
+      "colorBadge": "blue",
+      "lastChecked": "2026-08-01T09:47:25.955Z",
+      "lowestPrice": 299,
+      "currency": "zł",
+      "currentPrice": 299,
+      "status": "active",
+      "highestPrice": 299,
+      "needsManualPrice": false
+    },
+    {
+      "lastChecked": "2026-08-01T09:47:29.389Z",
+      "title": "BUTY CLOUDFOAM FLEX RAPIDFIT HP6993",
+      "colorBadge": "blue",
+      "currency": "zł",
+      "currentPrice": 279,
+      "lowestPrice": 195.3,
+      "url": "https://www.adidas.pl/buty-cloudfoam-flex-rapidfit/HP6993.html?cm_mmc=AdieSEM_PLA_Google-_-adiSEM_EU_PL_SEA_Shopping_NA_LF_AlwaysOn_SA360_BRA_BRA_CrossCategory_NA_HighStock-NA-ROI-Polish-NA-PSPB_NA-_-Branded+High+Stock+-+unisex-_-PRODUCT_GROUP&cm_mmca1=PL&cm_mmca2=&18470258621&ds_agid=174228401008&af_reengagement_window=30d&is_retargeting=true&pid=googleadwords_temp&c=adiSEM_EU_PL_SEA_Shopping_NA_LF_AlwaysOn_SA360_BRA_BRA_CrossCategory_NA_HighStock-NA-ROI-Polish-NA-PSPB_NA&af_channel=Shopping_Search&adicl_gclid=CjwKCAjwmozTBhAeEiwAkEGZzlyluC2MXw913lBG_VaZJfVphv1wV5T_sAVAK4OmH10PeCkP2AowcRoCcbcQAvD_BwE&gclsrc=aw.ds&gad_source=1&gad_campaignid=18470258621&gbraid=0AAAAADwBzxp6pnS7Xy9FnFxCxDdmaoDQK&gclid=CjwKCAjwmozTBhAeEiwAkEGZzlyluC2MXw913lBG_VaZJfVphv1wV5T_sAVAK4OmH10PeCkP2AowcRoCcbcQAvD_BwE",
+      "inStock": true,
+      "previousPrice": 279,
+      "imageUrl": "https://www.adidas.pl/buty-cloudfoam-flex-rapidfit/q_auto/1c180b73f2804528b098d5df18ed4574_9366/BUTY_CLOUDFOAM_FLEX_RAPIDFIT_Czern_HP6993_01_00_standard.jpg",
+      "status": "active",
+      "priceHistory": [
+        {
+          "price": 279,
+          "timestamp": "2026-07-24T20:50:37.456Z"
         },
         {
           "timestamp": "2026-07-25T05:04:31.700Z",
           "price": 279
+        },
+        {
+          "timestamp": "2026-07-26T07:31:29.442Z",
+          "price": 279
+        },
+        {
+          "price": 279,
+          "timestamp": "2026-07-27T06:01:54.060Z"
+        },
+        {
+          "timestamp": "2026-07-28T05:40:11.767Z",
+          "price": 279
+        },
+        {
+          "timestamp": "2026-07-29T07:08:36.113Z",
+          "price": 279
+        },
+        {
+          "timestamp": "2026-07-30T12:04:01.529Z",
+          "price": 195.3
+        },
+        {
+          "timestamp": "2026-07-31T06:25:44.205Z",
+          "price": 279
+        },
+        {
+          "timestamp": "2026-08-01T09:47:25.516Z",
+          "price": 279
         }
-      ]
+      ],
+      "id": "prod-1784926237456",
+      "highestPrice": 279,
+      "needsManualPrice": false
     },
     {
-      "title": "Skechers Scloric - Adidasy Mężczyźni",
-      "url": "https://www.amazon.pl/Skechers-M%C4%99skie-sportowe-Scloric-52631/dp/B07BQN4XSG/ref=mp_s_a_1_5?crid=3KI0C59ARJGE9&dib=eyJ2IjoiMSJ9.l2qGtErrb_mi803AaY2BycOI0Wx9HBPaUTnO6ivxWhPnsdw42B4bdkIczKIes8eoIjtj7gdLTRVGxgELxTDHY4OCpfg-KDuwqBdn-lBENjS5kug30stvyWNmoG4ptyqCqFCR457nGyg06cIssUzYAxf24wO0JW_IZK7ESsAaSN2289PyPOmhJ5M8neFtGHBJIQuYCjnOrDp0042-GRkZ0eT8_qA2OW3WgZb-IZmCUiCfnSZI2Z3lxhUiAe4-djyluE_7J-pdWpfzVHiJA_W9yJQvrKjzDlw7kFNzBmwKI_A._QhvGUVPItgGG8ZLpLGg-tuMBsfPrG5VQD0LgICrdjc&dib_tag=se&keywords=buty%2Bm%C4%99skie%2Bskechers&qid=1784201903&sprefix=Buty%2Bm%C4%99skie%2Bske%2Caps%2C162&sr=8-5&th=1&psc=1",
-      "currentPrice": 196.5,
-      "previousPrice": 192.83,
-      "lowestPrice": 192.83,
       "currency": "zł",
-      "imageUrl": "https://m.media-amazon.com/images/I/71DK335DPTL._AC_SL1500_.jpg",
-      "inStock": true,
-      "lastChecked": "2026-07-25T09:50:42.985Z",
+      "needsManualPrice": false,
+      "previousPrice": 178.63,
+      "title": "Skechers Męskie Sportowe Scloric 52631 B07BQN4XSG",
       "colorBadge": "blue",
-      "id": "prod-1784917784584",
-      "status": "active",
+      "currentPrice": 219.12,
+      "inStock": true,
       "priceHistory": [
         {
           "timestamp": "2026-07-24T20:00:34.747Z",
           "price": 192.83
         },
         {
-          "timestamp": "2026-07-25T09:49:52.771Z",
-          "price": 196.5
+          "timestamp": "2026-07-25T20:38:57.397Z",
+          "price": 178.75
+        },
+        {
+          "timestamp": "2026-07-26T18:18:03.265Z",
+          "price": 189.19
+        },
+        {
+          "timestamp": "2026-07-27T21:13:31.413Z",
+          "price": 178.74
+        },
+        {
+          "timestamp": "2026-07-28T19:53:00.866Z",
+          "price": 185.64
+        },
+        {
+          "timestamp": "2026-07-29T16:09:40.100Z",
+          "price": 179.13
+        },
+        {
+          "timestamp": "2026-07-30T12:04:02.354Z",
+          "price": 179.14
+        },
+        {
+          "timestamp": "2026-07-31T11:33:54.566Z",
+          "price": 178.63
+        },
+        {
+          "timestamp": "2026-08-01T09:47:22.816Z",
+          "price": 185.56
         }
       ],
+      "imageUrl": "https://m.media-amazon.com/images/I/71DK335DPTL._AC_SL1500_.jpg",
       "highestPrice": 196.51,
-      "needsManualPrice": false
+      "status": "active",
+      "id": "prod-1784917784584",
+      "lastChecked": "2026-08-01T09:47:34.427Z",
+      "url": "https://www.amazon.pl/Skechers-M%C4%99skie-sportowe-Scloric-52631/dp/B07BQN4XSG/ref=mp_s_a_1_5?crid=3KI0C59ARJGE9&dib=eyJ2IjoiMSJ9.l2qGtErrb_mi803AaY2BycOI0Wx9HBPaUTnO6ivxWhPnsdw42B4bdkIczKIes8eoIjtj7gdLTRVGxgELxTDHY4OCpfg-KDuwqBdn-lBENjS5kug30stvyWNmoG4ptyqCqFCR457nGyg06cIssUzYAxf24wO0JW_IZK7ESsAaSN2289PyPOmhJ5M8neFtGHBJIQuYCjnOrDp0042-GRkZ0eT8_qA2OW3WgZb-IZmCUiCfnSZI2Z3lxhUiAe4-djyluE_7J-pdWpfzVHiJA_W9yJQvrKjzDlw7kFNzBmwKI_A._QhvGUVPItgGG8ZLpLGg-tuMBsfPrG5VQD0LgICrdjc&dib_tag=se&keywords=buty%2Bm%C4%99skie%2Bskechers&qid=1784201903&sprefix=Buty%2Bm%C4%99skie%2Bske%2Caps%2C162&sr=8-5&th=1&psc=1",
+      "lowestPrice": 178.63
     },
     {
-      "title": "Regulowany śpiwór EverGrow Aspen 0-36m latte Zaffiro",
-      "url": "https://ecobobo.com/dziecko/51328-regulowany-spiwor-evergrow-aspen-0-36m-latte-zaffiro-5902745613031.html",
-      "currentPrice": 314.3,
-      "previousPrice": 34,
-      "lowestPrice": 34,
-      "currency": "zł",
-      "imageUrl": "https://ecobobo.com/217125-home_default/regulowany-spiwor-evergrow-aspen-0-36m-latte-zaffiro.webp",
-      "inStock": true,
-      "lastChecked": "2026-07-25T09:50:43.685Z",
       "colorBadge": "blue",
+      "currency": "zł",
+      "currentPrice": 314.3,
+      "lastChecked": "2026-08-01T09:47:26.740Z",
+      "title": "Regulowany śpiwór EverGrow Aspen 0-36m latte Zaffiro",
+      "needsManualPrice": false,
+      "lowestPrice": 34,
+      "previousPrice": 314.3,
+      "url": "https://ecobobo.com/dziecko/51328-regulowany-spiwor-evergrow-aspen-0-36m-latte-zaffiro-5902745613031.html",
       "id": "prod-1784900481270",
-      "status": "active",
       "priceHistory": [
         {
-          "timestamp": "2026-07-24T21:00:37.745Z",
-          "price": 34
+          "price": 34,
+          "timestamp": "2026-07-24T21:00:37.745Z"
         },
         {
           "timestamp": "2026-07-25T09:49:53.305Z",
           "price": 314.3
+        },
+        {
+          "timestamp": "2026-07-26T07:31:39.176Z",
+          "price": 314.3
+        },
+        {
+          "timestamp": "2026-07-27T06:01:54.976Z",
+          "price": 314.3
+        },
+        {
+          "timestamp": "2026-07-28T05:40:11.855Z",
+          "price": 314.3
+        },
+        {
+          "timestamp": "2026-07-29T07:08:34.167Z",
+          "price": 314.3
+        },
+        {
+          "timestamp": "2026-07-30T12:04:01.756Z",
+          "price": 314.3
+        },
+        {
+          "timestamp": "2026-07-31T06:23:05.957Z",
+          "price": 314.3
+        },
+        {
+          "timestamp": "2026-08-01T09:47:22.873Z",
+          "price": 314.3
         }
       ],
       "highestPrice": 314.3,
-      "needsManualPrice": false
+      "imageUrl": "https://ecobobo.com/217125-home_default/regulowany-spiwor-evergrow-aspen-0-36m-latte-zaffiro.webp",
+      "status": "active",
+      "inStock": false
     },
     {
-      "title": "Regulowany śpiwór EverGrow Scandi 0-36m beige Zaffiro",
       "url": "https://ecobobo.com/dziecko/51218-regulowany-spiwor-evergrow-scandi-0-36m-beige-zaffiro-5902745614007.html",
-      "currentPrice": 359.2,
-      "previousPrice": 306.19,
-      "lowestPrice": 34,
-      "currency": "zł",
-      "imageUrl": "https://ecobobo.com/216524-home_default/regulowany-spiwor-evergrow-scandi-0-36m-beige-zaffiro.webp",
       "inStock": true,
-      "lastChecked": "2026-07-25T09:50:44.138Z",
-      "colorBadge": "blue",
-      "id": "prod-1784900467078",
-      "status": "active",
+      "title": "Regulowany śpiwór EverGrow Scandi 0-36m beige Zaffiro",
+      "imageUrl": "https://ecobobo.com/216524-home_default/regulowany-spiwor-evergrow-scandi-0-36m-beige-zaffiro.webp",
       "priceHistory": [
         {
-          "timestamp": "2026-07-24T21:08:28.385Z",
-          "price": 34
+          "price": 34,
+          "timestamp": "2026-07-24T21:08:28.385Z"
         },
         {
-          "timestamp": "2026-07-25T05:55:58.887Z",
-          "price": 306.19
+          "price": 306.19,
+          "timestamp": "2026-07-25T05:55:58.887Z"
+        },
+        {
+          "price": 359.2,
+          "timestamp": "2026-07-26T07:31:40.057Z"
+        },
+        {
+          "timestamp": "2026-07-27T06:01:54.937Z",
+          "price": 359.2
+        },
+        {
+          "timestamp": "2026-07-28T05:40:12.271Z",
+          "price": 359.2
+        },
+        {
+          "timestamp": "2026-07-29T07:08:34.471Z",
+          "price": 359.2
+        },
+        {
+          "timestamp": "2026-07-30T12:04:01.839Z",
+          "price": 359.2
+        },
+        {
+          "timestamp": "2026-07-31T06:23:06.583Z",
+          "price": 359.2
+        },
+        {
+          "timestamp": "2026-08-01T09:47:23.270Z",
+          "price": 359.2
         }
       ],
+      "status": "active",
+      "previousPrice": 359.2,
       "highestPrice": 359.2,
-      "needsManualPrice": false
+      "colorBadge": "blue",
+      "currentPrice": 359.2,
+      "id": "prod-1784900467078",
+      "lastChecked": "2026-08-01T09:47:27.186Z",
+      "needsManualPrice": false,
+      "currency": "zł",
+      "lowestPrice": 34
     },
     {
-      "title": "Chicco Kompaktowy Kosz na pieluszki, Pojemnik na Pieluchy, Składany, Zajmuje Mało Miejsca, Do Użytku ze Zwykłymi Workami",
-      "url": "https://www.amazon.pl/Chicco-9481000000-Pojemnik-Pieluchy-Srebro/dp/B0DKTFMHT9/ref=asc_df_B0792G6PFD?mcid=8f077bbc1c4f399cbdcb54cfe7c309d7&tag=plshogostdsp-21&linkCode=df0&hvadid=719659225426&hvpos=&hvnetw=g&hvrand=10945544934733219435&hvpone=&hvptwo=&hvqmt=&hvdev=m&hvdvcmdl=&hvlocint=&hvlocphy=9067414&hvtargid=pla-430708989544&psc=1&hvocijid=10945544934733219435-B0792G6PFD-&hvexpln=0&language=pl_PL&gad_source=1&th=1",
-      "currentPrice": 183.99,
       "previousPrice": 149.99,
-      "lowestPrice": 149.99,
-      "currency": "zł",
-      "imageUrl": "https://www.amazon.pl/Chicco-9481000000-Pojemnik-Pieluchy-Srebro/dp/B0DKTFMHT9/350_QL50_.jpg",
-      "inStock": true,
-      "lastChecked": "2026-07-25T05:56:00.362Z",
-      "colorBadge": "blue",
+      "needsManualPrice": false,
       "id": "prod-1784900453433",
+      "lowestPrice": 149,
+      "title": "Chicco 9481000000 Pojemnik Pieluchy Srebro B0DKTFMHT9",
+      "currentPrice": 149.99,
       "status": "active",
+      "url": "https://www.amazon.pl/Chicco-9481000000-Pojemnik-Pieluchy-Srebro/dp/B0DKTFMHT9/ref=asc_df_B0792G6PFD?mcid=8f077bbc1c4f399cbdcb54cfe7c309d7&tag=plshogostdsp-21&linkCode=df0&hvadid=719659225426&hvpos=&hvnetw=g&hvrand=10945544934733219435&hvpone=&hvptwo=&hvqmt=&hvdev=m&hvdvcmdl=&hvlocint=&hvlocphy=9067414&hvtargid=pla-430708989544&psc=1&hvocijid=10945544934733219435-B0792G6PFD-&hvexpln=0&language=pl_PL&gad_source=1&th=1",
+      "currency": "zł",
+      "lastChecked": "2026-08-01T09:47:33.309Z",
       "priceHistory": [
         {
           "timestamp": "2026-07-24T21:00:41.437Z",
           "price": 149.99
         },
         {
-          "timestamp": "2026-07-25T05:56:00.362Z",
+          "price": 149.99,
+          "timestamp": "2026-07-25T10:04:10.778Z"
+        },
+        {
+          "timestamp": "2026-07-26T07:31:48.500Z",
+          "price": 149
+        },
+        {
+          "timestamp": "2026-07-27T19:10:28.529Z",
+          "price": 149.99
+        },
+        {
+          "timestamp": "2026-07-28T05:40:13.497Z",
           "price": 183.99
+        },
+        {
+          "timestamp": "2026-07-29T07:08:35.088Z",
+          "price": 183.99
+        },
+        {
+          "timestamp": "2026-07-30T12:04:03.583Z",
+          "price": 178.95
+        },
+        {
+          "timestamp": "2026-07-31T18:41:45.953Z",
+          "price": 149.99
+        },
+        {
+          "timestamp": "2026-08-01T09:47:33.309Z",
+          "price": 149.99
         }
       ],
       "highestPrice": 183.99,
-      "needsManualPrice": false
+      "colorBadge": "blue",
+      "imageUrl": "https://m.media-amazon.com/images/I/41Z7V7Ui53L._AC_SL1500_.jpg",
+      "inStock": true
     },
     {
-      "title": "Chicco 9481000000 Pojemnik Pieluchy Srebro",
-      "url": "https://www.amazon.pl/Chicco-9481000000-Pojemnik-Pieluchy-Srebro/dp/B0792G6PFD/ref=asc_df_B0792G6PFD?mcid=8f077bbc1c4f399cbdcb54cfe7c309d7&tag=plshogostdsp-21&linkCode=df0&hvadid=719659225426&hvpos=&hvnetw=g&hvrand=10945544934733219435&hvpone=&hvptwo=&hvqmt=&hvdev=m&hvdvcmdl=&hvlocint=&hvlocphy=9067414&hvtargid=pla-430708989544&psc=1&hvocijid=10945544934733219435-B0792G6PFD-&hvexpln=0&language=pl_PL&gad_source=1&th=1",
-      "currentPrice": 149.99,
-      "previousPrice": 149.99,
-      "lowestPrice": 149.99,
       "currency": "zł",
-      "imageUrl": "https://www.amazon.pl/Chicco-9481000000-Pojemnik-Pieluchy-Srebro/dp/B0792G6PFD/350_QL50_.jpg",
-      "inStock": true,
-      "lastChecked": "2026-07-25T05:56:45.376Z",
-      "colorBadge": "blue",
-      "id": "prod-1784900441668",
-      "status": "active",
+      "title": "Chicco 9481000000 Pojemnik na Pieluchy, Srebro, 26 x 24.5 x 48.5 cm B0792G6PFD",
+      "url": "https://www.amazon.pl/Chicco-9481000000-Pojemnik-Pieluchy-Srebro/dp/B0792G6PFD/ref=asc_df_B0792G6PFD?mcid=8f077bbc1c4f399cbdcb54cfe7c309d7&tag=plshogostdsp-21&linkCode=df0&hvadid=719659225426&hvpos=&hvnetw=g&hvrand=10945544934733219435&hvpone=&hvptwo=&hvqmt=&hvdev=m&hvdvcmdl=&hvlocint=&hvlocphy=9067414&hvtargid=pla-430708989544&psc=1&hvocijid=10945544934733219435-B0792G6PFD-&hvexpln=0&language=pl_PL&gad_source=1&th=1",
       "priceHistory": [
         {
           "timestamp": "2026-07-24T13:40:41.668Z",
           "price": 149.99
         },
         {
-          "timestamp": "2026-07-25T05:56:45.376Z",
+          "price": 149.99,
+          "timestamp": "2026-07-25T05:56:45.376Z"
+        },
+        {
+          "price": 149.99,
+          "timestamp": "2026-07-26T07:31:57.107Z"
+        },
+        {
+          "price": 149.99,
+          "timestamp": "2026-07-27T06:01:56.618Z"
+        },
+        {
+          "timestamp": "2026-07-28T05:40:13.803Z",
+          "price": 149.99
+        },
+        {
+          "timestamp": "2026-07-29T07:08:35.359Z",
+          "price": 149.99
+        },
+        {
+          "timestamp": "2026-07-30T12:04:04.149Z",
+          "price": 149.99
+        },
+        {
+          "timestamp": "2026-07-31T06:25:44.821Z",
+          "price": 149.99
+        },
+        {
+          "timestamp": "2026-08-01T09:47:33.078Z",
           "price": 149.99
         }
       ],
       "highestPrice": 149.99,
-      "needsManualPrice": false
+      "imageUrl": "https://www.amazon.pl/Chicco-9481000000-Pojemnik-Pieluchy-Srebro/dp/B0792G6PFD/350_QL50_.jpg",
+      "inStock": true,
+      "lowestPrice": 149.99,
+      "colorBadge": "blue",
+      "needsManualPrice": false,
+      "currentPrice": 149.99,
+      "status": "active",
+      "lastChecked": "2026-08-01T09:47:33.078Z",
+      "previousPrice": 149.99,
+      "id": "prod-1784900441668"
     },
     {
-      "title": "Engel Naturalny, polar, 100% wełna",
-      "url": "https://www.amazon.pl/Engel-Naturalny-polar-Piaskowy-melan%C5%BC/dp/B0CH8KJ5PW/ref=mp_s_a_1_37?crid=3TX96JMBNIL8Y&dib=eyJ2IjoiMSJ9.5RxvvgYP0ZF2RhRdtOCuIMfwUgU_zaAPEhAM-OPdNwIxPoSewgzNnSghpmPYjq9zk2Jgz1yJXnJnW2Ny_uajDUw6XOMLWX30tyZcS5QXbRKdDEPwvg_-bDoEJVYXFRKlgoRmchG-e13iO_FuUnDKiI4d_-NLmx6hnBDo3pnTNBm28R1Bmd-gecjsy2Pr_d4ZePKalLYJRf69_AHboADkj-Udp81J3NN2k6OcKL3d6L6q7GuW1BWJt5_3fZLPcYXG0Kt2Pl8t_By-_a5WS8jJWbN7OKLtow0TXldGJYMKscE.vhoongsGi9yNlQkziPC_SGqT2NXsht9S_tpWM3YJ9ZE&dib_tag=se&keywords=engel&qid=1784530207&sprefix=engel%2Caps%2C132&sr=8-37&xpid=4G8D0uiYkJBot&th=1&psc=1#averageCustomerReviewsAnchor",
-      "currentPrice": 80.88,
-      "previousPrice": 80.88,
-      "lowestPrice": 80.88,
-      "currency": "zł",
-      "imageUrl": "https://m.media-amazon.com/images/I/61di795MBbL._AC_SL1500_.jpg",
-      "inStock": true,
-      "lastChecked": "2026-07-24T21:08:34.736Z",
-      "colorBadge": "blue",
-      "id": "prod-1784900418023",
       "status": "active",
       "priceHistory": [
         {
           "timestamp": "2026-07-24T13:40:18.023Z",
           "price": 80.88
+        },
+        {
+          "timestamp": "2026-07-25T15:29:33.469Z",
+          "price": 80.88
+        },
+        {
+          "price": 80.88,
+          "timestamp": "2026-07-26T07:47:07.504Z"
+        },
+        {
+          "price": 80.69,
+          "timestamp": "2026-07-27T12:39:55.888Z"
+        },
+        {
+          "timestamp": "2026-07-28T05:40:14.109Z",
+          "price": 80.69
+        },
+        {
+          "timestamp": "2026-07-29T07:08:55.773Z",
+          "price": 80.69
+        },
+        {
+          "timestamp": "2026-07-30T12:04:03.825Z",
+          "price": 80.69
+        },
+        {
+          "timestamp": "2026-07-31T11:34:05.127Z",
+          "price": 80.59
+        },
+        {
+          "timestamp": "2026-08-01T09:47:36.885Z",
+          "price": 80.59
         }
       ],
+      "colorBadge": "blue",
+      "needsManualPrice": false,
       "highestPrice": 80.88,
-      "needsManualPrice": false
+      "id": "prod-1784900418023",
+      "inStock": true,
+      "currency": "zł",
+      "lastChecked": "2026-08-01T09:47:36.886Z",
+      "lowestPrice": 80.59,
+      "currentPrice": 80.59,
+      "url": "https://www.amazon.pl/Engel-Naturalny-polar-Piaskowy-melan%C5%BC/dp/B0CH8KJ5PW/ref=mp_s_a_1_37?crid=3TX96JMBNIL8Y&dib=eyJ2IjoiMSJ9.5RxvvgYP0ZF2RhRdtOCuIMfwUgU_zaAPEhAM-OPdNwIxPoSewgzNnSghpmPYjq9zk2Jgz1yJXnJnW2Ny_uajDUw6XOMLWX30tyZcS5QXbRKdDEPwvg_-bDoEJVYXFRKlgoRmchG-e13iO_FuUnDKiI4d_-NLmx6hnBDo3pnTNBm28R1Bmd-gecjsy2Pr_d4ZePKalLYJRf69_AHboADkj-Udp81J3NN2k6OcKL3d6L6q7GuW1BWJt5_3fZLPcYXG0Kt2Pl8t_By-_a5WS8jJWbN7OKLtow0TXldGJYMKscE.vhoongsGi9yNlQkziPC_SGqT2NXsht9S_tpWM3YJ9ZE&dib_tag=se&keywords=engel&qid=1784530207&sprefix=engel%2Caps%2C132&sr=8-37&xpid=4G8D0uiYkJBot&th=1&psc=1#averageCustomerReviewsAnchor",
+      "previousPrice": 80.59,
+      "imageUrl": "https://m.media-amazon.com/images/I/61di795MBbL._AC_SL1500_.jpg",
+      "title": "Engel Naturalny, polar, 100% wełna B0CH8KJ5PW"
     },
     {
-      "title": "Chicco Next2Me Magic Evo Łóżko boczne łóżeczka dziecięcego z trybem huśtania, odchylanym oparciem, 11 poziomami wysokości, regulowaną wysokością, 4 kółkami, z materacem i torbą podróżną, beżowe",
-      "url": "https://www.amazon.pl/Chicco-dzieci%C4%99cego-odchylanym-regulowan%C4%85-wysoko%C5%9Bci%C4%85/dp/B0BR87PL25/ref=mp_s_a_1_1?crid=HBEUUHUKM4Y3&dib=eyJ2IjoiMSJ9.DaPGxXt24GwZmuk6wTWzCTh-EVMq1PBhOn2eg9kdMfDhShAfXEO3QqbDGETnDwZky8TdfPlqh-7Eph8sDkYKK_d7SBdVKKKWz-vK_oAhqtkoOJn8FeLaJt4j0lZw_VMaPO-UiGpbya7J2HMzI20KsNBcjAMCZUJ8prqTjFzUO8cgBpAw1Flr692K5BGeVMT_tpZGaMpeRXCPe-2eHk4Y1Uv1Jc8v_nea5VIcyWiMNC0tWrs0F6j7kaZtLLoQHKN4EfGkuJWLD2CIzPfs8lDbelv6s87WlGs7jD8pd7nBjTc.AwZuyvkyRjmqGwxAPpaxO9M0HGsAS-2-OQYDruSE6XY&dib_tag=se&keywords=chicco+next2me&qid=1784721248&s=fashion&sprefix=chicco+next2me%2Cfashion%2C121&sr=1-1",
-      "currentPrice": 845.45,
-      "previousPrice": 845.45,
-      "lowestPrice": 845.45,
-      "currency": "zł",
-      "imageUrl": "https://www.amazon.pl/Chicco-dzieci%C4%99cego-odchylanym-regulowan%C4%85-wysoko%C5%9Bci%C4%85/dp/B0BR87PL25/350_QL50_.jpg",
-      "inStock": true,
-      "lastChecked": "2026-07-24T21:08:37.594Z",
-      "colorBadge": "blue",
-      "id": "prod-1784900385188",
+      "needsManualPrice": false,
       "status": "active",
+      "inStock": true,
+      "previousPrice": 845.13,
+      "currency": "zł",
+      "currentPrice": 845.13,
+      "colorBadge": "blue",
+      "url": "https://www.amazon.pl/Chicco-dzieci%C4%99cego-odchylanym-regulowan%C4%85-wysoko%C5%9Bci%C4%85/dp/B0BR87PL25/ref=mp_s_a_1_1?crid=HBEUUHUKM4Y3&dib=eyJ2IjoiMSJ9.DaPGxXt24GwZmuk6wTWzCTh-EVMq1PBhOn2eg9kdMfDhShAfXEO3QqbDGETnDwZky8TdfPlqh-7Eph8sDkYKK_d7SBdVKKKWz-vK_oAhqtkoOJn8FeLaJt4j0lZw_VMaPO-UiGpbya7J2HMzI20KsNBcjAMCZUJ8prqTjFzUO8cgBpAw1Flr692K5BGeVMT_tpZGaMpeRXCPe-2eHk4Y1Uv1Jc8v_nea5VIcyWiMNC0tWrs0F6j7kaZtLLoQHKN4EfGkuJWLD2CIzPfs8lDbelv6s87WlGs7jD8pd7nBjTc.AwZuyvkyRjmqGwxAPpaxO9M0HGsAS-2-OQYDruSE6XY&dib_tag=se&keywords=chicco+next2me&qid=1784721248&s=fashion&sprefix=chicco+next2me%2Cfashion%2C121&sr=1-1",
+      "id": "prod-1784900385188",
+      "highestPrice": 845.45,
       "priceHistory": [
         {
           "timestamp": "2026-07-24T13:39:45.188Z",
           "price": 845.45
+        },
+        {
+          "timestamp": "2026-07-25T15:29:35.542Z",
+          "price": 845.45
+        },
+        {
+          "timestamp": "2026-07-26T07:47:16.160Z",
+          "price": 799
+        },
+        {
+          "timestamp": "2026-07-27T06:01:57.264Z",
+          "price": 843.26
+        },
+        {
+          "timestamp": "2026-07-28T05:40:14.730Z",
+          "price": 843.21
+        },
+        {
+          "timestamp": "2026-07-29T07:08:47.086Z",
+          "price": 843.21
+        },
+        {
+          "timestamp": "2026-07-30T12:04:04.709Z",
+          "price": 844.37
+        },
+        {
+          "timestamp": "2026-07-31T06:25:47.070Z",
+          "price": 845.13
+        },
+        {
+          "timestamp": "2026-08-01T09:47:43.095Z",
+          "price": 845.13
         }
       ],
-      "highestPrice": 845.45,
-      "needsManualPrice": false
+      "lastChecked": "2026-08-01T09:47:43.095Z",
+      "imageUrl": "https://www.amazon.pl/Chicco-dzieci%C4%99cego-odchylanym-regulowan%C4%85-wysoko%C5%9Bci%C4%85/dp/B0BR87PL25/350_QL50_.jpg",
+      "title": "Chicco Dziecięcego Odchylanym Regulowaną Wysokością B0BR87PL25",
+      "lowestPrice": 799
     },
     {
-      "title": "Engel Wełniany kombinezon zimowy z polaru | z zamkiem błyskawicznym | Newborn Baby | 100% wełna kbT",
-      "url": "https://www.amazon.pl/dp/B0FHKYPZTX?ref=cm_sw_r_cso_fm_mwn_dp_1YY7NZJ6Q3RW29MWNA2G&ref_=cm_sw_r_cso_fm_mwn_dp_1YY7NZJ6Q3RW29MWNA2G&social_share=cm_sw_r_cso_fm_mwn_dp_1YY7NZJ6Q3RW29MWNA2G",
-      "currentPrice": 384.6,
-      "previousPrice": 34,
-      "lowestPrice": 34,
-      "currency": "zł",
-      "imageUrl": "https://m.media-amazon.com/images/I/71v-0+Xp81L._AC_SL1500_.jpg",
-      "inStock": true,
-      "lastChecked": "2026-07-24T21:08:39.545Z",
       "colorBadge": "blue",
       "id": "prod-1784900179513",
+      "currentPrice": 34.98,
       "status": "active",
+      "lastChecked": "2026-08-01T09:47:39.330Z",
+      "imageUrl": "https://m.media-amazon.com/images/I/31k4hDZXTAL._AC_SY1000_.jpg",
+      "lowestPrice": 34,
+      "title": "B0FHKYPZTX",
       "priceHistory": [
         {
-          "timestamp": "2026-07-24T21:00:57.858Z",
+          "price": 34,
+          "timestamp": "2026-07-24T21:00:57.858Z"
+        },
+        {
+          "price": 383.93,
+          "timestamp": "2026-07-25T16:57:09.520Z"
+        },
+        {
+          "timestamp": "2026-07-26T07:32:36.120Z",
+          "price": 383.93
+        },
+        {
+          "price": 34,
+          "timestamp": "2026-07-27T19:10:31.905Z"
+        },
+        {
+          "timestamp": "2026-07-28T05:40:15.321Z",
+          "price": 384.49
+        },
+        {
+          "timestamp": "2026-07-29T07:08:45.623Z",
           "price": 34
+        },
+        {
+          "timestamp": "2026-07-30T12:04:05.529Z",
+          "price": 384.85
+        },
+        {
+          "timestamp": "2026-07-31T18:41:55.679Z",
+          "price": 34.97
+        },
+        {
+          "timestamp": "2026-08-01T09:47:39.330Z",
+          "price": 34.98
         }
       ],
-      "highestPrice": 384.6,
-      "needsManualPrice": false
+      "url": "https://www.amazon.pl/dp/B0FHKYPZTX?ref=cm_sw_r_cso_fm_mwn_dp_1YY7NZJ6Q3RW29MWNA2G&ref_=cm_sw_r_cso_fm_mwn_dp_1YY7NZJ6Q3RW29MWNA2G&social_share=cm_sw_r_cso_fm_mwn_dp_1YY7NZJ6Q3RW29MWNA2G",
+      "inStock": true,
+      "highestPrice": 384.85,
+      "needsManualPrice": false,
+      "currency": "zł",
+      "previousPrice": 34.97
     },
     {
-      "title": "Engel Dziecięcy kombinezon z kapturem, wełniany",
-      "url": "https://www.amazon.pl/Engel-Dzieci%C4%99cy-kombinezon-kapturem-welniany/dp/B07VXH6176/ref=mp_s_a_1_3?dib=eyJ2IjoiMSJ9.JcGvYdVlgBGULF7gFttCrho0Dak7tzSXNGeZHQHmUtl5JjrSLP-9GFRm3Fc8N5Quj39ap3hNa-IsNhpXGGPRBU4G7NYefIaeGS4ovv8znFyaFoOa_OXu8YALxo7rSH-043ZMwzH-QhjU9225V3KvuWFMKrD35eXX2m1spZyK2xrGrdBffjVZHYw3IaVmK_ZySkSfUAsUA8En6ZmZl_Tn-2QKBWAjJ72hTdKkEGrMcUBOC1oYqaQN6dF0dSPdqYHh8MgSaZ43u89tZ6aE5-5cGT1exVNrSdfbtDnCMn28_jQ.HGe_uuC8pwRzUv-bq5Wlc-TbOoiYc7uJdytj2j16iqU&dib_tag=se&qid=1784529807&refinements=p_4%3AEngel&s=fashion&sr=1-3",
-      "currentPrice": 378,
-      "previousPrice": 378,
-      "lowestPrice": 378,
-      "currency": "zł",
-      "imageUrl": "https://m.media-amazon.com/images/I/71gKX-UQjIL._AC_SL1500_.jpg",
       "inStock": true,
-      "lastChecked": "2026-07-24T21:08:41.391Z",
+      "previousPrice": 378,
+      "title": "Engel Dziecięcy Kombinezon Kapturem Welniany B07VXH6176",
+      "needsManualPrice": false,
+      "currentPrice": 378,
+      "url": "https://www.amazon.pl/Engel-Dzieci%C4%99cy-kombinezon-kapturem-welniany/dp/B07VXH6176/ref=mp_s_a_1_3?dib=eyJ2IjoiMSJ9.JcGvYdVlgBGULF7gFttCrho0Dak7tzSXNGeZHQHmUtl5JjrSLP-9GFRm3Fc8N5Quj39ap3hNa-IsNhpXGGPRBU4G7NYefIaeGS4ovv8znFyaFoOa_OXu8YALxo7rSH-043ZMwzH-QhjU9225V3KvuWFMKrD35eXX2m1spZyK2xrGrdBffjVZHYw3IaVmK_ZySkSfUAsUA8En6ZmZl_Tn-2QKBWAjJ72hTdKkEGrMcUBOC1oYqaQN6dF0dSPdqYHh8MgSaZ43u89tZ6aE5-5cGT1exVNrSdfbtDnCMn28_jQ.HGe_uuC8pwRzUv-bq5Wlc-TbOoiYc7uJdytj2j16iqU&dib_tag=se&qid=1784529807&refinements=p_4%3AEngel&s=fashion&sr=1-3",
+      "imageUrl": "https://m.media-amazon.com/images/I/31+PLmcBOlL._AC_SY1000_.jpg",
       "colorBadge": "blue",
-      "id": "prod-1784900156625",
-      "status": "active",
+      "lastChecked": "2026-08-01T09:47:45.182Z",
       "priceHistory": [
         {
           "timestamp": "2026-07-24T13:35:56.625Z",
           "price": 378
+        },
+        {
+          "timestamp": "2026-07-25T15:29:39.233Z",
+          "price": 378
+        },
+        {
+          "timestamp": "2026-07-26T07:32:44.917Z",
+          "price": 378
+        },
+        {
+          "timestamp": "2026-07-27T06:01:58.460Z",
+          "price": 378
+        },
+        {
+          "timestamp": "2026-07-28T05:40:15.747Z",
+          "price": 378
+        },
+        {
+          "timestamp": "2026-07-29T07:09:00.479Z",
+          "price": 378
+        },
+        {
+          "timestamp": "2026-07-30T12:04:05.891Z",
+          "price": 378
+        },
+        {
+          "timestamp": "2026-07-31T06:25:47.477Z",
+          "price": 378
+        },
+        {
+          "timestamp": "2026-08-01T09:47:45.181Z",
+          "price": 378
         }
       ],
       "highestPrice": 378,
-      "needsManualPrice": false
+      "lowestPrice": 378,
+      "id": "prod-1784900156625",
+      "currency": "zł",
+      "status": "active"
     },
     {
-      "title": "T'nB - Infinite Ergo Ergonomic Vertical Mouse, 4800 DPI, Releasable Wheel, Dual Bluetooth Modes and USB Dongle, Long Life Rechargeable Battery - Black",
       "url": "https://www.amazon.it/TnB-Ergonomico-Verticale-Rilasciabile-Ricaricabile/dp/B0DTYVLZDJ",
-      "currentPrice": 49.9,
-      "previousPrice": 49.9,
-      "lowestPrice": 49.9,
-      "currency": "€",
-      "imageUrl": "https://m.media-amazon.com/images/I/61ZcRKj7EtL._AC_SL1500_.jpg",
-      "inStock": true,
-      "lastChecked": "2026-07-24T21:08:43.436Z",
-      "colorBadge": "blue",
-      "id": "prod-1784899539758",
-      "status": "active",
+      "highestPrice": 49.9,
       "priceHistory": [
         {
           "timestamp": "2026-07-24T13:25:39.758Z",
           "price": 49.9
+        },
+        {
+          "timestamp": "2026-07-25T15:29:41.421Z",
+          "price": 49.9
+        },
+        {
+          "timestamp": "2026-07-26T07:47:46.568Z",
+          "price": 49.9
+        },
+        {
+          "timestamp": "2026-07-27T06:01:59.190Z",
+          "price": 49.9
+        },
+        {
+          "timestamp": "2026-07-28T05:40:16.067Z",
+          "price": 49.9
+        },
+        {
+          "timestamp": "2026-07-29T07:09:07.304Z",
+          "price": 49.9
+        },
+        {
+          "timestamp": "2026-07-30T12:04:06.929Z",
+          "price": 49.9
+        },
+        {
+          "timestamp": "2026-07-31T06:25:48.826Z",
+          "price": 49.9
+        },
+        {
+          "timestamp": "2026-08-01T09:47:47.741Z",
+          "price": 49.9
         }
       ],
-      "highestPrice": 49.9,
-      "needsManualPrice": false
+      "id": "prod-1784899539758",
+      "previousPrice": 49.9,
+      "currency": "€",
+      "colorBadge": "blue",
+      "needsManualPrice": false,
+      "title": "TnB Ergonomico Verticale Rilasciabile Ricaricabile B0DTYVLZDJ",
+      "status": "active",
+      "lowestPrice": 49.9,
+      "currentPrice": 49.9,
+      "lastChecked": "2026-08-01T09:47:47.741Z",
+      "inStock": true,
+      "imageUrl": "https://m.media-amazon.com/images/I/61ZcRKj7EtL._AC_SL1500_.jpg"
     },
     {
-      "title": "Pozostale Artykuly P Chicco Next2me Forever Lozeczko Dostawne",
-      "url": "https://www.bobowozki.com.pl/pozostale-artykuly-p-chicco-next2me-forever-lozeczko-dostawne?kolor=423",
-      "currentPrice": 449,
-      "previousPrice": 1445,
-      "lowestPrice": 449,
-      "currency": "zł",
       "imageUrl": "https://www.bobowozki.com.pl/img/cache/2546d058d8ca928d136fd7865cb14e25/3/e/3eb9729f1e7b207a3e562c4fca322f781bb4d798_10927kolor_Almond_9.jpg",
-      "inStock": true,
-      "lastChecked": "2026-07-24T21:08:48.146Z",
-      "colorBadge": "blue",
-      "id": "prod-1784899494555",
+      "title": "Chicco NEXT2ME FOREVER łóżeczko dostawne",
+      "needsManualPrice": false,
+      "previousPrice": 1545,
+      "currentPrice": 1545,
       "status": "active",
       "priceHistory": [
         {
           "timestamp": "2026-07-24T21:01:12.460Z",
           "price": 449
+        },
+        {
+          "price": 1445,
+          "timestamp": "2026-07-25T10:06:48.065Z"
+        },
+        {
+          "price": 1445,
+          "timestamp": "2026-07-26T07:33:11.537Z"
+        },
+        {
+          "timestamp": "2026-07-27T06:01:57.911Z",
+          "price": 1445
+        },
+        {
+          "timestamp": "2026-07-28T05:40:20.662Z",
+          "price": 1445
+        },
+        {
+          "timestamp": "2026-07-29T07:08:48.301Z",
+          "price": 1445
+        },
+        {
+          "timestamp": "2026-07-30T12:04:05.216Z",
+          "price": 1545
+        },
+        {
+          "timestamp": "2026-07-31T06:25:48.257Z",
+          "price": 1545
+        },
+        {
+          "timestamp": "2026-08-01T09:47:39.749Z",
+          "price": 1545
         }
       ],
-      "highestPrice": 1445,
-      "needsManualPrice": false
+      "highestPrice": 1545,
+      "currency": "zł",
+      "url": "https://www.bobowozki.com.pl/pozostale-artykuly-p-chicco-next2me-forever-lozeczko-dostawne?kolor=423",
+      "inStock": true,
+      "lowestPrice": 449,
+      "colorBadge": "blue",
+      "id": "prod-1784899494555",
+      "lastChecked": "2026-08-01T09:47:39.750Z"
     }
   ],
   "sheetInfo": {
     "id": "1MNA1dQZLJdEygLdE4HD9mtWUrnhK2EuDguH8R0SI2B4",
     "name": "Product Price Tracker Output",
     "url": "https://docs.google.com/spreadsheets/d/1MNA1dQZLJdEygLdE4HD9mtWUrnhK2EuDguH8R0SI2B4/edit",
-    "lastSynced": "2026-07-24T21:08:49.654Z",
+    "lastSynced": "2026-07-28T14:42:02.991Z",
     "autoSync": true,
-    "syncedRowCount": 12
+    "syncedRowCount": 14
   },
   "emailSettings": {
     "enabled": true,
@@ -310,131 +794,485 @@
   "googleToken": "",
   "logs": [
     {
-      "id": "log-1784972525589-5dzs3",
-      "timestamp": "2026-07-25T09:42:05.589Z",
-      "type": "info",
-      "message": "Background scraping product: Engel Wełniany kombinezon zimowy z polaru | z zamkiem błyskawicznym | Newborn Baby | 100% wełna kbT..."
+      "id": "log-1785577664487-z7xk3",
+      "timestamp": "2026-08-01T09:47:44.487Z",
+      "type": "success",
+      "message": "Automated server check completed. Next run scheduled for: 2026-08-01T12:47:44.487Z"
     },
     {
-      "id": "log-1784972525589-sdjv6",
-      "timestamp": "2026-07-25T09:42:05.589Z",
+      "id": "log-1785577664486-ip6wc",
+      "timestamp": "2026-08-01T09:47:44.486Z",
       "type": "warning",
-      "message": "Price check for \"Chicco Next2Me Magic Evo Łóżko boczne łóżeczka dziecięcego z trybem huśtania, odchylanym oparciem, 11 poziomami wysokości, regulowaną wysokością, 4 kółkami, z materacem i torbą podróżną, beżowe\" returned no price or needs manual entry."
+      "message": "Price check for \"TnB Ergonomico Verticale Rilasciabile Ricaricabile B0DTYVLZDJ\" returned no price or needs manual entry."
     },
     {
-      "id": "log-1784972520353-hu3tt",
-      "timestamp": "2026-07-25T09:42:00.353Z",
-      "type": "info",
-      "message": "Background scraping product: Chicco Next2Me Magic Evo Łóżko boczne łóżeczka dziecięcego z trybem huśtania, odchylanym oparciem, 11 poziomami wysokości, regulowaną wysokością, 4 kółkami, z materacem i torbą podróżną, beżowe..."
-    },
-    {
-      "id": "log-1784972520352-ajjw3",
-      "timestamp": "2026-07-25T09:42:00.352Z",
+      "id": "log-1785577658041-b381q",
+      "timestamp": "2026-08-01T09:47:38.041Z",
       "type": "success",
-      "message": "Scraped \"Engel Naturalny, polar, 100% wełna\": 80.88 zł"
+      "message": "Scraped \"Engel Dziecięcy kombinezon z kapturem, wełniany B07VXH6176\": 378 zł"
     },
     {
-      "id": "log-1784972519091-6c7aa",
-      "timestamp": "2026-07-25T09:41:59.091Z",
-      "type": "info",
-      "message": "Background scraping product: Engel Naturalny, polar, 100% wełna..."
-    },
-    {
-      "id": "log-1784972519091-kwivq",
-      "timestamp": "2026-07-25T09:41:59.091Z",
+      "id": "log-1785577656218-whxwa",
+      "timestamp": "2026-08-01T09:47:36.218Z",
       "type": "success",
-      "message": "Scraped \"Chicco 9481000000 Pojemnik na Pieluchy, Srebro, 26 x 24.5 x 48.5 cm\": 149.99 zł"
+      "message": "Scraped \"B0FHKYPZTX\": 34.98 zł (via Ceneo)"
     },
     {
-      "id": "log-1784972517685-b1nsa",
-      "timestamp": "2026-07-25T09:41:57.685Z",
-      "type": "info",
-      "message": "Background scraping product: Chicco 9481000000 Pojemnik na Pieluchy, Srebro, 26 x 24.5 x 48.5 cm..."
-    },
-    {
-      "id": "log-1784972517684-olsen",
-      "timestamp": "2026-07-25T09:41:57.684Z",
+      "id": "log-1785577655950-b5jfq",
+      "timestamp": "2026-08-01T09:47:35.950Z",
       "type": "success",
-      "message": "Scraped \"Chicco Kompaktowy Kosz na pieluszki, Pojemnik na Pieluchy, Składany, Zajmuje Mało Miejsca, Do Użytku ze Zwykłymi Workami\": 183.99 zł"
+      "message": "Scraped \"Chicco NEXT2ME FOREVER łóżeczko dostawne\": 1545 zł"
     },
     {
-      "id": "log-1784972514165-s7lgq",
-      "timestamp": "2026-07-25T09:41:54.165Z",
+      "id": "log-1785577655673-0sxcl",
+      "timestamp": "2026-08-01T09:47:35.673Z",
       "type": "info",
-      "message": "Background scraping product: Chicco Kompaktowy Kosz na pieluszki, Pojemnik na Pieluchy, Składany, Zajmuje Mało Miejsca, Do Użytku ze Zwykłymi Workami..."
+      "message": "Background scraping product [15/15]: Chicco NEXT2ME FOREVER łóżeczko dostawne..."
     },
     {
-      "id": "log-1784972514160-u73vh",
-      "timestamp": "2026-07-25T09:41:54.160Z",
-      "type": "success",
-      "message": "Scraped \"Regulowany śpiwór Evergrow Scandi 0-36m Beige Zaffiro\": 199 zł"
-    },
-    {
-      "id": "log-1784972506134-q6rv6",
-      "timestamp": "2026-07-25T09:41:46.134Z",
-      "type": "info",
-      "message": "Background scraping product: 51218 Regulowany Spiwor Evergrow Scandi 0 36m Beige Zaffiro..."
-    },
-    {
-      "id": "log-1784972506134-ujl37",
-      "timestamp": "2026-07-25T09:41:46.134Z",
-      "type": "success",
-      "message": "Scraped \"Regulowany śpiwór Evergrow Aspen 0-36m Latte Zaffiro\": 229 zł"
-    },
-    {
-      "id": "log-1784972499434-9way2",
-      "timestamp": "2026-07-25T09:41:39.434Z",
-      "type": "info",
-      "message": "Background scraping product: 51328 Regulowany Spiwor Evergrow Aspen 0 36m Latte Zaffiro..."
-    },
-    {
-      "id": "log-1784972499434-mgrhi",
-      "timestamp": "2026-07-25T09:41:39.434Z",
-      "type": "success",
-      "message": "Scraped \"Skechers Męskie sportowe Scloric 52631\": 219 zł"
-    },
-    {
-      "id": "log-1784972488834-xaq7t",
-      "timestamp": "2026-07-25T09:41:28.834Z",
-      "type": "info",
-      "message": "Background scraping product: Skechers Scloric - Adidasy Mężczyźni..."
-    },
-    {
-      "id": "log-1784972488834-agdgi",
-      "timestamp": "2026-07-25T09:41:28.834Z",
+      "id": "log-1785577655670-clmqn",
+      "timestamp": "2026-08-01T09:47:35.670Z",
       "type": "warning",
-      "message": "Price check for \"www.adidas.pl\" returned no price or needs manual entry."
+      "message": "Price check for \"Chicco Dziecięcego Odchylanym Regulowaną Wysokością B0BR87PL25\" returned no price or needs manual entry."
     },
     {
-      "id": "log-1784972476287-4u6e4",
-      "timestamp": "2026-07-25T09:41:16.287Z",
+      "id": "log-1785577655543-r93gm",
+      "timestamp": "2026-08-01T09:47:35.543Z",
       "type": "info",
-      "message": "Background scraping product: www.adidas.pl..."
+      "message": "Background scraping product [14/15]: TnB Ergonomico Verticale Rilasciabile Ricaricabile B0DTYVLZDJ..."
     },
     {
-      "id": "log-1784972476287-5hd5t",
-      "timestamp": "2026-07-25T09:41:16.287Z",
+      "id": "log-1785577655542-p31ty",
+      "timestamp": "2026-08-01T09:47:35.542Z",
+      "type": "warning",
+      "message": "Price check for \"Chicco Lóżeczkiem Montessori Regulowana Cyrkulacja B0DQ2LNRQK\" returned no price or needs manual entry."
+    },
+    {
+      "id": "log-1785577654473-qdden",
+      "timestamp": "2026-08-01T09:47:34.473Z",
       "type": "info",
-      "message": "Automated server agent execution started (background check)..."
+      "message": "Background scraping product [13/15]: Engel Dziecięcy kombinezon z kapturem, wełniany B07VXH6176..."
     },
     {
-      "id": "log-1784922972879-l4ozb",
-      "timestamp": "2026-07-24T19:56:12.879Z",
+      "id": "log-1785577654472-war2j",
+      "timestamp": "2026-08-01T09:47:34.472Z",
+      "type": "warning",
+      "message": "Price check for \"Engel Naturalny Polar Piaskowy Melanż B0CH8KJ5PW\" returned no price or needs manual entry."
+    },
+    {
+      "id": "log-1785577650589-2rmqy",
+      "timestamp": "2026-08-01T09:47:30.589Z",
+      "type": "info",
+      "message": "Background scraping product [12/15]: B0FHKYPZTX..."
+    },
+    {
+      "id": "log-1785577650587-qzuwx",
+      "timestamp": "2026-08-01T09:47:30.587Z",
       "type": "success",
-      "message": "Automated server check completed. Next run scheduled for: 2026-07-24T22:56:12.879Z"
+      "message": "Scraped \"Chicco 9481000000 Pojemnik Pieluchy Srebro B0DKTFMHT9\": 149.99 zł (via Ceneo)"
     },
     {
-      "id": "log-1784922972879-gb4az",
-      "timestamp": "2026-07-24T19:56:12.879Z",
+      "id": "log-1785577648209-fp72l",
+      "timestamp": "2026-08-01T09:47:28.209Z",
       "type": "info",
-      "message": "Automated server agent execution started (background check)..."
+      "message": "Background scraping product [11/15]: Chicco Dziecięcego Odchylanym Regulowaną Wysokością B0BR87PL25..."
     },
     {
-      "id": "server-init",
-      "timestamp": "2026-07-24T15:19:11.383Z",
+      "id": "log-1785577648208-fic0l",
+      "timestamp": "2026-08-01T09:47:28.208Z",
+      "type": "success",
+      "message": "Scraped \"Chicco 9481000000 Pojemnik na Pieluchy, Srebro, 26 x 24.5 x 48.5 cm B0792G6PFD\": 149.99 zł"
+    },
+    {
+      "id": "log-1785577647343-gj16r",
+      "timestamp": "2026-08-01T09:47:27.343Z",
       "type": "info",
-      "message": "Server-side continuous background agent initialized.",
-      "details": "Agent runs persistent checks in cloud server independently of browser open/close state."
+      "message": "Background scraping product [10/15]: Engel Naturalny Polar Piaskowy Melanż B0CH8KJ5PW..."
+    },
+    {
+      "id": "log-1785577647341-mppvs",
+      "timestamp": "2026-08-01T09:47:27.341Z",
+      "type": "success",
+      "message": "Scraped \"BUTY CLOUDFOAM FLEX RAPIDFIT HP6993\": 279 zł"
+    },
+    {
+      "id": "log-1785577646481-vyw5e",
+      "timestamp": "2026-08-01T09:47:26.481Z",
+      "type": "info",
+      "message": "Background scraping product [9/15]: Chicco 9481000000 Pojemnik Pieluchy Srebro B0792G6PFD..."
+    },
+    {
+      "id": "log-1785577646479-8gi2i",
+      "timestamp": "2026-08-01T09:47:26.479Z",
+      "type": "success",
+      "message": "Scraped \"Skechers Scloric - Adidasy Mężczyźni B07BQN4XSG\": 185.56 zł"
+    },
+    {
+      "id": "log-1785577645235-jx4z2",
+      "timestamp": "2026-08-01T09:47:25.235Z",
+      "type": "info",
+      "message": "Background scraping product [8/15]: Chicco 9481000000 Pojemnik Pieluchy Srebro B0DKTFMHT9..."
+    },
+    {
+      "id": "log-1785577645234-wtkjg",
+      "timestamp": "2026-08-01T09:47:25.234Z",
+      "type": "success",
+      "message": "Scraped \"Regulowany śpiwór EverGrow Scandi 0-36m beige Zaffiro\": 359.2 zł"
+    },
+    {
+      "id": "log-1785577644823-8r783",
+      "timestamp": "2026-08-01T09:47:24.823Z",
+      "type": "info",
+      "message": "Background scraping product [7/15]: Regulowany śpiwór EverGrow Scandi 0-36m beige Zaffiro..."
+    },
+    {
+      "id": "log-1785577644822-usdz3",
+      "timestamp": "2026-08-01T09:47:24.822Z",
+      "type": "success",
+      "message": "Scraped \"Regulowany śpiwór EverGrow Aspen 0-36m latte Zaffiro\": 314.3 zł"
+    },
+    {
+      "id": "log-1785577644415-038mr",
+      "timestamp": "2026-08-01T09:47:24.415Z",
+      "type": "info",
+      "message": "Background scraping product [6/15]: Regulowany śpiwór EverGrow Aspen 0-36m latte Zaffiro..."
+    },
+    {
+      "id": "log-1785577644414-tyjbn",
+      "timestamp": "2026-08-01T09:47:24.414Z",
+      "type": "success",
+      "message": "Scraped \"BUTY CLOUDFOAM FLEX SMART CASUAL KI4916\": 299 zł"
+    },
+    {
+      "id": "log-1785577644291-jpviu",
+      "timestamp": "2026-08-01T09:47:24.291Z",
+      "type": "info",
+      "message": "Background scraping product [5/15]: Skechers Scloric - Adidasy Mężczyźni B07BQN4XSG..."
+    },
+    {
+      "id": "log-1785577644277-7pi4c",
+      "timestamp": "2026-08-01T09:47:24.277Z",
+      "type": "success",
+      "message": "Scraped \"Donica Verve plastikowa kwadratowa 43 cm szara\": 148 zł"
+    },
+    {
+      "id": "log-1785577644139-1wysz",
+      "timestamp": "2026-08-01T09:47:24.139Z",
+      "type": "info",
+      "message": "Background scraping product [4/15]: BUTY CLOUDFOAM FLEX RAPIDFIT HP6993..."
+    },
+    {
+      "id": "log-1785577644137-7b1vh",
+      "timestamp": "2026-08-01T09:47:24.137Z",
+      "type": "info",
+      "message": "Background scraping product [3/15]: BUTY CLOUDFOAM FLEX SMART CASUAL KI4916..."
+    },
+    {
+      "id": "log-1785577644135-5xjl0",
+      "timestamp": "2026-08-01T09:47:24.135Z",
+      "type": "info",
+      "message": "Background scraping product [2/15]: Donica Verve plastikowa kwadratowa 43 cm szara..."
+    },
+    {
+      "id": "log-1785577644133-nta9l",
+      "timestamp": "2026-08-01T09:47:24.133Z",
+      "type": "info",
+      "message": "Background scraping product [1/15]: Chicco Lóżeczkiem Montessori Regulowana Cyrkulacja B0DQ2LNRQK..."
+    },
+    {
+      "id": "log-1785577644131-rng1v",
+      "timestamp": "2026-08-01T09:47:24.131Z",
+      "type": "info",
+      "message": "Automated server agent execution started with controlled concurrency (4 parallel workers)..."
+    },
+    {
+      "message": "Automated server check completed. Next run scheduled for: 2026-07-31T21:34:27.298Z",
+      "type": "success",
+      "timestamp": "2026-07-31T18:34:27.298Z",
+      "id": "log-1785522867298-rg4xa"
+    },
+    {
+      "timestamp": "2026-07-31T18:34:27.296Z",
+      "message": "Price check for \"Engel Dziecięcy kombinezon z kapturem, wełniany B07VXH6176\" returned no price or needs manual entry.",
+      "id": "log-1785522867296-a34en",
+      "type": "warning"
+    },
+    {
+      "id": "log-1785522864006-y8fwg",
+      "message": "Price check for \"T'nB - Infinite Ergo Ergonomic Vertical Mouse, 4800 DPI, Releasable Wheel, Dual Bluetooth Modes and USB Dongle, Long Life Rechargeable Battery - Black B0DTYVLZDJ\" returned no price or needs manual entry.",
+      "timestamp": "2026-07-31T18:34:24.006Z",
+      "type": "warning"
+    },
+    {
+      "timestamp": "2026-07-31T18:34:23.542Z",
+      "type": "success",
+      "message": "Scraped \"Chicco 9481000000 Pojemnik Pieluchy Srebro B0792G6PFD\": 149.99 zł (via Ceneo)",
+      "id": "log-1785522863542-xmhek"
+    },
+    {
+      "id": "log-1785522857582-cutza",
+      "type": "success",
+      "timestamp": "2026-07-31T18:34:17.582Z",
+      "message": "Scraped \"Chicco NEXT2ME FOREVER łóżeczko dostawne\": 1545 zł"
+    },
+    {
+      "timestamp": "2026-07-31T18:34:17.176Z",
+      "id": "log-1785522857176-961c8",
+      "message": "Background scraping product [15/15]: Chicco NEXT2ME FOREVER łóżeczko dostawne...",
+      "type": "info"
+    },
+    {
+      "timestamp": "2026-07-31T18:34:17.174Z",
+      "type": "success",
+      "id": "log-1785522857174-jme0z",
+      "message": "Scraped \"Engel Naturalny, polar, 100% wełna B0CH8KJ5PW\": 80.59 zł"
+    },
+    {
+      "message": "Background scraping product [14/15]: T'nB - Infinite Ergo Ergonomic Vertical Mouse, 4800 DPI, Releasable Wheel, Dual Bluetooth Modes and USB Dongle, Long Life Rechargeable Battery - Black B0DTYVLZDJ...",
+      "id": "log-1785522855566-q0upj",
+      "type": "info",
+      "timestamp": "2026-07-31T18:34:15.566Z"
+    },
+    {
+      "type": "success",
+      "message": "Scraped \"Skechers Męskie Sportowe Scloric 52631 B07BQN4XSG\": 219.12 zł (via Ceneo)",
+      "id": "log-1785522855564-94m8c",
+      "timestamp": "2026-07-31T18:34:15.564Z"
+    },
+    {
+      "type": "info",
+      "timestamp": "2026-07-31T18:34:15.413Z",
+      "id": "log-1785522855413-0nkxd",
+      "message": "Background scraping product [13/15]: Engel Dziecięcy kombinezon z kapturem, wełniany B07VXH6176..."
+    },
+    {
+      "message": "Scraped \"Engel Wełniany kombinezon zimowy z polaru | z zamkiem błyskawicznym | Newborn Baby | 100% wełna kbT B0FHKYPZTX\": 383.18 zł",
+      "type": "success",
+      "timestamp": "2026-07-31T18:34:15.411Z",
+      "id": "log-1785522855411-ykhyi"
+    },
+    {
+      "message": "Background scraping product [12/15]: Engel Wełniany kombinezon zimowy z polaru | z zamkiem błyskawicznym | Newborn Baby | 100% wełna kbT B0FHKYPZTX...",
+      "id": "log-1785522854619-xo2ii",
+      "timestamp": "2026-07-31T18:34:14.619Z",
+      "type": "info"
+    },
+    {
+      "message": "Scraped \"Chicco Next2Me Magic Evo Łóżko boczne łóżeczka dziecięcego z trybem huśtania, odchylanym oparciem, 11 poziomami wysokości, regulowaną wysokością, 4 kółkami, z materacem i torbą podróżną, beżowe B0BR87PL25\": 845.13 zł",
+      "type": "success",
+      "timestamp": "2026-07-31T18:34:14.616Z",
+      "id": "log-1785522854616-ze4o7"
+    },
+    {
+      "id": "log-1785522853785-i84ri",
+      "timestamp": "2026-07-31T18:34:13.785Z",
+      "message": "Background scraping product [11/15]: Chicco Next2Me Magic Evo Łóżko boczne łóżeczka dziecięcego z trybem huśtania, odchylanym oparciem, 11 poziomami wysokości, regulowaną wysokością, 4 kółkami, z materacem i torbą podróżną, beżowe B0BR87PL25...",
+      "type": "info"
+    },
+    {
+      "id": "log-1785522853784-1ng20",
+      "timestamp": "2026-07-31T18:34:13.784Z",
+      "message": "Scraped \"Chicco 9481000000 Pojemnik Pieluchy Srebro B0DKTFMHT9\": 149.99 zł (via Ceneo)",
+      "type": "success"
+    },
+    {
+      "message": "Background scraping product [10/15]: Engel Naturalny, polar, 100% wełna B0CH8KJ5PW...",
+      "timestamp": "2026-07-31T18:34:13.299Z",
+      "id": "log-1785522853299-q3uea",
+      "type": "info"
+    },
+    {
+      "message": "Price check for \"Chicco Next2Me Forever, Łóżeczko dziecięce boczne 3 w 1, łóżeczko staje się łóżeczkiem Montessori, do 4 lat (22 kg), regulowana wysokość, dobra cyrkulacja powietrza, 4 koła, materac w zestawie B0DQ2LNRQK\" returned no price or needs manual entry.",
+      "timestamp": "2026-07-31T18:34:13.297Z",
+      "id": "log-1785522853297-sna2q",
+      "type": "warning"
+    },
+    {
+      "type": "info",
+      "message": "Background scraping product [9/15]: Chicco 9481000000 Pojemnik na Pieluchy, Srebro, 26 x 24.5 x 48.5 cm B0792G6PFD...",
+      "timestamp": "2026-07-31T18:34:13.050Z",
+      "id": "log-1785522853050-bz1oi"
+    },
+    {
+      "message": "Scraped \"BUTY CLOUDFOAM FLEX RAPIDFIT HP6993\": 279 zł (via Ceneo)",
+      "type": "success",
+      "id": "log-1785522853048-frjfi",
+      "timestamp": "2026-07-31T18:34:13.048Z"
+    },
+    {
+      "type": "info",
+      "id": "log-1785522843083-xjypq",
+      "timestamp": "2026-07-31T18:34:03.083Z",
+      "message": "Background scraping product [8/15]: Chicco Kompaktowy Kosz na pieluszki, Pojemnik na Pieluchy, Składany, Zajmuje Mało Miejsca, Do Użytku ze Zwykłymi Workami B0DKTFMHT9..."
+    },
+    {
+      "timestamp": "2026-07-31T18:34:03.082Z",
+      "message": "Scraped \"Regulowany śpiwór EverGrow Scandi 0-36m beige Zaffiro\": 359.2 zł",
+      "id": "log-1785522843082-7ijkc",
+      "type": "success"
+    },
+    {
+      "type": "info",
+      "timestamp": "2026-07-31T18:34:02.622Z",
+      "id": "log-1785522842622-fh9w4",
+      "message": "Background scraping product [7/15]: Regulowany śpiwór EverGrow Scandi 0-36m beige Zaffiro..."
+    },
+    {
+      "type": "success",
+      "message": "Scraped \"Regulowany śpiwór EverGrow Aspen 0-36m latte Zaffiro\": 314.3 zł",
+      "id": "log-1785522842621-c8hzw",
+      "timestamp": "2026-07-31T18:34:02.621Z"
+    },
+    {
+      "type": "info",
+      "id": "log-1785522841805-rlv6b",
+      "message": "Background scraping product [6/15]: Regulowany śpiwór EverGrow Aspen 0-36m latte Zaffiro...",
+      "timestamp": "2026-07-31T18:34:01.805Z"
+    },
+    {
+      "timestamp": "2026-07-31T18:34:01.804Z",
+      "type": "success",
+      "message": "Scraped \"BUTY CLOUDFOAM FLEX SMART CASUAL KI4916\": 299 zł",
+      "id": "log-1785522841804-0272r"
+    },
+    {
+      "type": "info",
+      "timestamp": "2026-07-31T18:34:01.608Z",
+      "message": "Background scraping product [5/15]: Skechers Scloric - Adidasy Mężczyźni B07BQN4XSG...",
+      "id": "log-1785522841608-nq7us"
+    },
+    {
+      "timestamp": "2026-07-31T18:34:01.607Z",
+      "id": "log-1785522841607-r2g5f",
+      "type": "success",
+      "message": "Scraped \"Donica Verve plastikowa kwadratowa 43 cm szara\": 148 zł"
+    },
+    {
+      "timestamp": "2026-07-31T18:34:00.807Z",
+      "type": "info",
+      "message": "Background scraping product [4/15]: BUTY CLOUDFOAM FLEX RAPIDFIT HP6993...",
+      "id": "log-1785522840807-r62el"
+    },
+    {
+      "id": "log-1785522840803-lctn1",
+      "message": "Background scraping product [3/15]: BUTY CLOUDFOAM FLEX SMART CASUAL KI4916...",
+      "timestamp": "2026-07-31T18:34:00.803Z",
+      "type": "info"
+    },
+    {
+      "type": "info",
+      "id": "log-1785522840800-7yt7k",
+      "timestamp": "2026-07-31T18:34:00.800Z",
+      "message": "Background scraping product [2/15]: Donica Verve plastikowa kwadratowa 43 cm szara..."
+    },
+    {
+      "type": "info",
+      "timestamp": "2026-07-31T18:34:00.789Z",
+      "id": "log-1785522840789-8r2yl",
+      "message": "Background scraping product [1/15]: Chicco Next2Me Forever, Łóżeczko dziecięce boczne 3 w 1, łóżeczko staje się łóżeczkiem Montessori, do 4 lat (22 kg), regulowana wysokość, dobra cyrkulacja powietrza, 4 koła, materac w zestawie B0DQ2LNRQK..."
+    },
+    {
+      "timestamp": "2026-07-31T18:34:00.787Z",
+      "type": "info",
+      "id": "log-1785522840787-skeam",
+      "message": "Automated server agent execution started with controlled concurrency (4 parallel workers)..."
+    },
+    {
+      "timestamp": "2026-07-31T13:22:11.498Z",
+      "message": "Automated server check completed. Next run scheduled for: 2026-07-31T16:22:11.498Z",
+      "id": "log-1785504131498-mqd58",
+      "type": "success"
+    },
+    {
+      "message": "Scraped \"T'nB - Infinite Ergo Ergonomic Vertical Mouse, 4800 DPI, Releasable Wheel, Dual Bluetooth Modes and USB Dongle, Long Life Rechargeable Battery - Black B0DTYVLZDJ\": 49.9 €",
+      "type": "success",
+      "timestamp": "2026-07-31T13:22:11.496Z",
+      "id": "log-1785504131496-t2b42"
+    },
+    {
+      "message": "Scraped \"Engel Dziecięcy kombinezon z kapturem, wełniany B07VXH6176\": 378 zł",
+      "id": "log-1785504131184-fmyxg",
+      "type": "success",
+      "timestamp": "2026-07-31T13:22:11.184Z"
+    },
+    {
+      "id": "log-1785504130821-kb6rm",
+      "message": "Scraped \"Engel Wełniany kombinezon zimowy z polaru | z zamkiem błyskawicznym | Newborn Baby | 100% wełna kbT B0FHKYPZTX\": 384.85 zł",
+      "type": "success",
+      "timestamp": "2026-07-31T13:22:10.821Z"
+    },
+    {
+      "message": "Scraped \"Chicco NEXT2ME FOREVER łóżeczko dostawne\": 1545 zł",
+      "id": "log-1785504130568-8yyra",
+      "type": "success",
+      "timestamp": "2026-07-31T13:22:10.568Z"
+    },
+    {
+      "message": "Background scraping product [15/15]: Chicco NEXT2ME FOREVER łóżeczko dostawne...",
+      "timestamp": "2026-07-31T13:22:10.165Z",
+      "type": "info",
+      "id": "log-1785504130165-qe8zh"
+    },
+    {
+      "id": "log-1785504130163-g3n77",
+      "type": "success",
+      "timestamp": "2026-07-31T13:22:10.163Z",
+      "message": "Scraped \"Chicco Next2Me Magic Evo Łóżko boczne łóżeczka dziecięcego z trybem huśtania, odchylanym oparciem, 11 poziomami wysokości, regulowaną wysokością, 4 kółkami, z materacem i torbą podróżną, beżowe B0BR87PL25\": 845.13 zł"
+    },
+    {
+      "type": "info",
+      "message": "Background scraping product [14/15]: T'nB - Infinite Ergo Ergonomic Vertical Mouse, 4800 DPI, Releasable Wheel, Dual Bluetooth Modes and USB Dongle, Long Life Rechargeable Battery - Black B0DTYVLZDJ...",
+      "id": "log-1785504129401-avrjk",
+      "timestamp": "2026-07-31T13:22:09.401Z"
+    },
+    {
+      "id": "log-1785504129400-woxpz",
+      "type": "success",
+      "message": "Scraped \"BUTY CLOUDFOAM FLEX RAPIDFIT HP6993\": 279 zł",
+      "timestamp": "2026-07-31T13:22:09.400Z"
+    },
+    {
+      "id": "log-1785504129297-v3q8r",
+      "type": "info",
+      "message": "Background scraping product [13/15]: Engel Dziecięcy kombinezon z kapturem, wełniany B07VXH6176...",
+      "timestamp": "2026-07-31T13:22:09.297Z"
+    },
+    {
+      "type": "success",
+      "id": "log-1785504129295-8cts8",
+      "timestamp": "2026-07-31T13:22:09.295Z",
+      "message": "Scraped \"Engel Naturalny, polar, 100% wełna B0CH8KJ5PW\": 80.59 zł"
+    },
+    {
+      "type": "info",
+      "timestamp": "2026-07-31T13:22:08.910Z",
+      "id": "log-1785504128910-d6eov",
+      "message": "Background scraping product [12/15]: Engel Wełniany kombinezon zimowy z polaru | z zamkiem błyskawicznym | Newborn Baby | 100% wełna kbT B0FHKYPZTX..."
+    },
+    {
+      "timestamp": "2026-07-31T13:22:08.907Z",
+      "message": "Scraped \"Chicco 9481000000 Pojemnik na Pieluchy, Srebro, 26 x 24.5 x 48.5 cm B0792G6PFD\": 149.99 zł",
+      "type": "success",
+      "id": "log-1785504128907-clhnp"
+    },
+    {
+      "timestamp": "2026-07-31T13:22:08.637Z",
+      "id": "log-1785504128637-eh9gy",
+      "type": "info",
+      "message": "Background scraping product [11/15]: Chicco Next2Me Magic Evo Łóżko boczne łóżeczka dziecięcego z trybem huśtania, odchylanym oparciem, 11 poziomami wysokości, regulowaną wysokością, 4 kółkami, z materacem i torbą podróżną, beżowe B0BR87PL25..."
+    },
+    {
+      "timestamp": "2026-07-31T13:22:08.636Z",
+      "type": "success",
+      "message": "Scraped \"Chicco Kompaktowy Kosz na pieluszki, Pojemnik na Pieluchy, Składany, Zajmuje Mało Miejsca, Do Użytku ze Zwykłymi Workami B0DKTFMHT9\": 180.49 zł",
+      "id": "log-1785504128636-zhr3t"
+    },
+    {
+      "id": "log-1785504127413-4ga0w",
+      "message": "Background scraping product [10/15]: Engel Naturalny, polar, 100% wełna B0CH8KJ5PW...",
+      "timestamp": "2026-07-31T13:22:07.413Z",
+      "type": "info"
     }
-  ]
+  ],
+  "updatedAt": "2026-07-31T18:45:25.714Z"
 }

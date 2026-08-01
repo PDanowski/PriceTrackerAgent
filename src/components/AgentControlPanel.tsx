@@ -6,6 +6,7 @@ interface AgentControlPanelProps {
   onRunAgent: () => void;
   isRunning: boolean;
   isInitializing?: boolean;
+  hasProducts?: boolean;
   checkProgress?: CheckProgress | null;
   onOpenAddModal: () => void;
   onOpenBackupModal: () => void;
@@ -22,6 +23,7 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
   onRunAgent,
   isRunning,
   isInitializing = false,
+  hasProducts = true,
   checkProgress,
   onOpenAddModal,
   onOpenBackupModal,
@@ -43,6 +45,8 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
     return `${mins > 0 ? `${mins}m ` : ''}${secs}s`;
   };
 
+  const isButtonDisabled = isRunning || isInitializing || !hasProducts;
+
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 mb-6 shadow-sm">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -50,7 +54,7 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={onRunAgent}
-            disabled={isRunning || isInitializing}
+            disabled={isButtonDisabled}
             className="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed text-sm"
           >
             {isRunning || isInitializing ? (
@@ -65,6 +69,8 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
                 ? checkProgress
                   ? `Sprawdzanie (${checkProgress.current}/${checkProgress.total} - ${Math.round((Math.min(checkProgress.current, checkProgress.total) / (checkProgress.total || 1)) * 100)}%)`
                   : 'Uruchamianie sprawdzania...'
+                : !hasProducts
+                ? 'Brak produktów do sprawdzenia'
                 : 'Uruchom sprawdzanie cen'}
             </span>
           </button>

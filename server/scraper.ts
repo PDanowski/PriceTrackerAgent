@@ -167,8 +167,12 @@ export async function scrapeProductDetails(url: string) {
     throw new Error('Invalid URL format');
   }
 
-  const targetFetchUrl = url;
+  let targetFetchUrl = url;
   const isAmazon = parsedUrl.hostname.includes('amazon.');
+  const amazonAsin = extractSkuFromUrl(url);
+  if (isAmazon && amazonAsin) {
+    targetFetchUrl = `https://${parsedUrl.hostname}/dp/${amazonAsin}`;
+  }
 
   // User-agent pool and header generator for avoiding bot blocks
   const USER_AGENT_POOL = [
@@ -211,11 +215,46 @@ export async function scrapeProductDetails(url: string) {
   ];
 
   const getRandomHeaders = (uaIndex: number) => {
-    const agentObj = USER_AGENT_POOL[(uaIndex + Math.floor(Math.random() * USER_AGENT_POOL.length)) % USER_AGENT_POOL.length];
+    const pool = isAmazon ? USER_AGENT_POOL.slice(0, 4) : USER_AGENT_POOL;
+    const agentObj = pool[(uaIndex + Math.floor(Math.random() * pool.length)) % pool.length];
+    const host = parsedUrl.hostname.toLowerCase();
+    let amzLang = 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7';
+    let amzCookie = '';
+
+    if (isAmazon) {
+      const sess1 = Math.floor(Math.random() * 8999999) + 1000000;
+      const sess2 = Math.floor(Math.random() * 8999999) + 1000000;
+      const ubid1 = Math.floor(Math.random() * 8999999) + 1000000;
+      const ubid2 = Math.floor(Math.random() * 8999999) + 1000000;
+
+      if (host.endsWith('.pl')) {
+        amzLang = 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7';
+        amzCookie = `session-id=258-${sess1}-${sess2}; i18n-prefs=PLN; lc-acbpl=pl_PL; ubid-acbpl=259-${ubid1}-${ubid2}`;
+      } else if (host.endsWith('.it')) {
+        amzLang = 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7';
+        amzCookie = `session-id=258-${sess1}-${sess2}; i18n-prefs=EUR; lc-main=it_IT; ubid-main=259-${ubid1}-${ubid2}`;
+      } else if (host.endsWith('.de')) {
+        amzLang = 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7';
+        amzCookie = `session-id=258-${sess1}-${sess2}; i18n-prefs=EUR; lc-main=de_DE; ubid-main=259-${ubid1}-${ubid2}`;
+      } else if (host.endsWith('.es')) {
+        amzLang = 'es-ES,es;q=0.9,en-US;q=0.8,en;q=0.7';
+        amzCookie = `session-id=258-${sess1}-${sess2}; i18n-prefs=EUR; lc-main=es_ES; ubid-main=259-${ubid1}-${ubid2}`;
+      } else if (host.endsWith('.fr')) {
+        amzLang = 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7';
+        amzCookie = `session-id=258-${sess1}-${sess2}; i18n-prefs=EUR; lc-main=fr_FR; ubid-main=259-${ubid1}-${ubid2}`;
+      } else if (host.endsWith('.uk') || host.endsWith('.co.uk')) {
+        amzLang = 'en-GB,en;q=0.9,en-US;q=0.8';
+        amzCookie = `session-id=258-${sess1}-${sess2}; i18n-prefs=GBP; lc-main=en_GB; ubid-main=259-${ubid1}-${ubid2}`;
+      } else {
+        amzLang = 'en-US,en;q=0.9';
+        amzCookie = `session-id=258-${sess1}-${sess2}; i18n-prefs=USD; lc-main=en_US; ubid-main=259-${ubid1}-${ubid2}`;
+      }
+    }
+
     const headers: Record<string, string> = {
       'User-Agent': agentObj.ua,
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-      'Accept-Language': isAmazon ? 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7' : 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept-Language': isAmazon ? amzLang : 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache',
       'Sec-Fetch-Dest': 'document',
@@ -224,6 +263,9 @@ export async function scrapeProductDetails(url: string) {
       'Sec-Fetch-User': '?1',
       'Upgrade-Insecure-Requests': '1',
     };
+    if (isAmazon && amzCookie) {
+      headers['Cookie'] = amzCookie;
+    }
     if (agentObj.secUa) {
       headers['Sec-Ch-Ua'] = agentObj.secUa;
       headers['Sec-Ch-Ua-Mobile'] = agentObj.mobile;
@@ -844,8 +886,8 @@ Page text snippet:
         required: ['title', 'price', 'currency', 'inStock'],
       };
 
-      // Try supported models in sequence if rate-limited (429), unavailable (404), or timing out
-      const modelsToTry = ['gemini-3.6-flash', 'gemini-3.6-pro', 'gemini-2.5-flash-lite'];
+      // Try supported models in sequence if rate-limited (429), experiencing high demand (503/UNAVAILABLE), unavailable (404), or timing out
+      const modelsToTry = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-3.6-pro'];
       let textResp = '';
 
       for (const modelName of modelsToTry) {
@@ -868,6 +910,10 @@ Page text snippet:
           if (textResp) break;
         } catch (modelErr: any) {
           const errText = modelErr?.message || String(modelErr);
+          if (errText.includes('503') || errText.includes('UNAVAILABLE') || errText.includes('high demand') || errText.includes('500') || errText.includes('INTERNAL')) {
+            console.warn(`⚠️ Gemini model '${modelName}' high demand/unavailable (${errText.includes('503') ? '503' : '500'}). Trying next model...`);
+            continue;
+          }
           if (errText.includes('429') || errText.includes('RESOURCE_EXHAUSTED') || errText.includes('quota')) {
             console.warn(`⚠️ Gemini model '${modelName}' quota/rate limit reached (429). Trying fallback model...`);
             continue;
@@ -880,7 +926,8 @@ Page text snippet:
             console.warn(`⚠️ Gemini model '${modelName}' request timed out (4s). Trying next model or standard fallback...`);
             continue;
           }
-          throw modelErr;
+          console.warn(`⚠️ Gemini model '${modelName}' error: ${errText.slice(0, 150)}. Trying next model...`);
+          continue;
         }
       }
 
@@ -898,10 +945,10 @@ Page text snippet:
       }
     } catch (geminiErr: any) {
       const msg = geminiErr?.message || String(geminiErr);
-      if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
-        console.warn('⚠️ Gemini API rate limit / quota exhausted across all models. Proceeding with standard web scraping fallbacks.');
+      if (msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('high demand') || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
+        console.warn('⚠️ Gemini API high demand / rate limit reached across models. Proceeding with standard web scraping fallbacks.');
       } else {
-        console.warn('Gemini structured response extraction warning:', msg);
+        console.warn('Gemini structured response extraction note:', msg);
       }
     }
   }

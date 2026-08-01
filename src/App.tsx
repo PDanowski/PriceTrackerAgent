@@ -197,8 +197,17 @@ export default function App() {
 
   // Init Firebase Auth
   useEffect(() => {
+    let resolved = false;
+    const authTimeout = setTimeout(() => {
+      if (!resolved) {
+        setIsAuthInitializing(false);
+      }
+    }, 1500);
+
     const unsubscribe = initAuth(
       (currentUser, accessToken) => {
+        resolved = true;
+        clearTimeout(authTimeout);
         setUser(currentUser);
         setToken(accessToken);
         if (!emailSettings.recipientEmail && currentUser.email) {
@@ -207,12 +216,15 @@ export default function App() {
         setIsAuthInitializing(false);
       },
       () => {
+        resolved = true;
+        clearTimeout(authTimeout);
         setUser(null);
         setToken(null);
         setIsAuthInitializing(false);
       }
     );
     return () => {
+      clearTimeout(authTimeout);
       if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, []);
@@ -221,11 +233,17 @@ export default function App() {
 
   // Sync state with server
   const syncWithServer = async () => {
-    if (isAgentRunningRef.current) return;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
-      const res = await fetch('/api/agent/state');
+      const res = await fetch('/api/agent/state', { signal: controller.signal });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const serverState = await res.json();
+        if (typeof serverState.isRunning === 'boolean') {
+          setIsAgentRunning(serverState.isRunning);
+          isAgentRunningRef.current = serverState.isRunning;
+        }
         if (serverState.products && serverState.products.length > 0) {
           setProducts(serverState.products);
         }
@@ -247,6 +265,7 @@ export default function App() {
     } catch (e) {
       console.warn('Failed to sync state from agent server:', e);
     } finally {
+      clearTimeout(timeoutId);
       setIsInitialSyncDone(true);
     }
   };
@@ -448,32 +467,43 @@ export default function App() {
       while (nextProductIndex < totalCount) {
         const i = nextProductIndex++;
         const prod = updatedProducts[i];
+        if (!prod) continue;
         setCheckingProductId(prod.id);
+
+        const targetUrl = prod.url && prod.url.startsWith('http') ? prod.url : `https://${prod.url || ''}`;
 
         try {
           addLog('info', `Sprawdzanie ceny [${i + 1}/${totalCount}]: "${prod.title}"...`);
 
-          // 1-time auto-retry on scrape errors / timeouts with 12s per-attempt timeout
           let response: Response | null = null;
+          let errorMessage = '';
           for (let retry = 0; retry < 2; retry++) {
             if (retry > 0) {
               await new Promise((r) => setTimeout(r, 800));
             }
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 12000);
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
             try {
               const res = await fetch('/api/scrape', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: prod.url }),
+                body: JSON.stringify({ url: targetUrl }),
                 signal: controller.signal,
               });
               if (res.ok) {
                 response = res;
                 break;
+              } else {
+                try {
+                  const errJson = await res.json();
+                  errorMessage = errJson.error || `Błąd serwera (HTTP ${res.status})`;
+                } catch {
+                  errorMessage = `Błąd serwera (HTTP ${res.status})`;
+                }
               }
             } catch (fetchErr: any) {
+              errorMessage = fetchErr.message || 'Błąd połączenia z serwerem';
               if (retry === 1) throw fetchErr;
             } finally {
               clearTimeout(timeoutId);
@@ -503,7 +533,7 @@ export default function App() {
                 oldPrice: basePreviousPrice,
                 newPrice,
                 currency: prod.currency,
-                url: prod.url,
+                url: targetUrl,
               });
               addLog(
                 'success',
@@ -526,7 +556,7 @@ export default function App() {
             updatedProducts[i] = {
               ...prod,
               title: (scraped.title && !scraped.title.includes('403') && !scraped.title.includes('Cloudflare')) ? scraped.title : prod.title,
-              url: prod.url,
+              url: targetUrl,
               imageUrl: scraped.imageUrl || prod.imageUrl,
               previousPrice: prevDayPrice,
               currentPrice: newPrice,
@@ -540,11 +570,11 @@ export default function App() {
             // Live UI state update after each product finishes
             setProducts([...updatedProducts]);
           } else {
-            addLog('warning', `Nie udało się pobrać ceny dla "${prod.title}". Zachowano dotychczasową cenę.`);
+            addLog('warning', `Nie udało się pobrać ceny dla "${prod.title}" (${errorMessage || 'Nieznany błąd'}). Zachowano dotychczasową cenę.`);
           }
         } catch (err: any) {
           if (err.name === 'AbortError') {
-            addLog('warning', `Przekroczono czas oczekiwania (12s) dla "${prod.title}". Pomijanie...`);
+            addLog('warning', `Przekroczono czas oczekiwania (15s) dla "${prod.title}". Pomijanie...`);
           } else {
             addLog('error', `Błąd podczas sprawdzania ${prod.title}: ${err.message}`);
           }
@@ -976,6 +1006,7 @@ export default function App() {
           onRunAgent={runServerAgentRun}
           isRunning={isAgentRunning}
           isInitializing={isAuthInitializing || !isInitialSyncDone}
+          hasProducts={products.length > 0}
           checkProgress={checkProgress}
           onOpenAddModal={() => setIsAddModalOpen(true)}
           onOpenBackupModal={() => setIsBackupModalOpen(true)}

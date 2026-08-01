@@ -15,7 +15,29 @@ describe('Scraper & URL Helper Utilities', () => {
   it('extracts SKUs from product URLs', () => {
     expect(extractSkuFromUrl('https://www.adidas.pl/buty-cloudfoam-flex-rapidfit/HP6993.html?cm_mmc=AdieSEM')).toBe('HP6993');
     expect(extractSkuFromUrl('https://www.amazon.pl/Apple-iPhone-15-128GB-Czarny/dp/B0CHX1P7P4')).toBe('B0CHX1P7P4');
+    expect(extractSkuFromUrl('https://www.amazon.pl/Chicco-9481000000-Pojemnik-Pieluchy-Srebro/dp/B0DKTFMHT9/ref=asc_df_B0792G6PFD?mcid=8f077bbc1c4f399cbdcb54cfe7c309d7&tag=plshogostdsp-21')).toBe('B0DKTFMHT9');
   });
+
+  it('scrapes Chicco Amazon product URL and returns exact price 178.34 zł without Ceneo fallback error', async () => {
+    const { scrapeProductDetails } = await import('../server/scraper');
+    const chiccoUrl = 'https://www.amazon.pl/Chicco-9481000000-Pojemnik-Pieluchy-Srebro/dp/B0DKTFMHT9/ref=asc_df_B0792G6PFD?mcid=8f077bbc1c4f399cbdcb54cfe7c309d7&tag=plshogostdsp-21&linkCode=df0&hvadid=719659225426&hvpos=&hvnetw=g&hvrand=10945544934733219435&hvpone=&hvptwo=&hvqmt=&hvdev=m&hvdvcmdl=&hvlocint=&hvlocphy=9067414&hvtargid=pla-430708989544&psc=1&hvocijid=10945544934733219435-B0792G6PFD-&hvexpln=0&language=pl_PL&gad_source=1&th=1';
+    
+    const res = await scrapeProductDetails(chiccoUrl);
+    expect(res.price).toBe(178.34);
+    expect(res.currency).toBe('zł');
+    expect(res.fetchedFromCeneo).toBe(false);
+    expect(res.title).toContain('Chicco');
+  }, 20000);
+
+  it('scrapes Amazon.it product URL and returns exact native price 49.90 € without forced PLN conversion', async () => {
+    const { scrapeProductDetails } = await import('../server/scraper');
+    const tnbUrl = 'https://www.amazon.it/TnB-Ergonomico-Verticale-Rilasciabile-Ricaricabile/dp/B0DTYVLZDJ';
+
+    const res = await scrapeProductDetails(tnbUrl);
+    expect(res.price).toBe(49.90);
+    expect(res.currency).toBe('€');
+    expect(res.fetchedFromCeneo).toBe(false);
+  }, 20000);
 
   it('extracts clean title from Ceneo search URL', () => {
     const url = 'https://www.ceneo.pl/szukaj-sony+wh+1000xm5.htm';
