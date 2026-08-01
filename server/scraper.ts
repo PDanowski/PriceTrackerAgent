@@ -673,64 +673,56 @@ export async function scrapeProductDetails(url: string) {
         scrapedTitle = amzTitle;
       }
 
-      const amzPriceSelectors = [
-        '#corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen',
-        '#corePrice_desktop .a-price:not(.a-text-price) .a-offscreen',
-        '#apex_desktop .a-price:not(.a-text-price) .a-offscreen',
-        '#corePrice_mobile_feature_div .a-price:not(.a-text-price) .a-offscreen',
-        '#corePriceDisplay_mobile_feature_div .a-price:not(.a-text-price) .a-offscreen',
-        '#apex_mobile_feature_div .a-price:not(.a-text-price) .a-offscreen',
-        '#apex_desktop .priceToPay .a-offscreen',
-        '#corePrice_desktop .priceToPay .a-offscreen',
-        '#corePriceDisplay_desktop_feature_div .priceToPay .a-offscreen',
-        '#corePrice_feature_div .priceToPay .a-offscreen',
+      // Priority 1: Scoped main price feature container to prevent picking up related/carousel prices (e.g. 214,93)
+      const primaryPriceContainerSelectors = [
+        '#corePriceDisplay_desktop_feature_div',
+        '#corePrice_desktop',
+        '#apex_desktop',
+        '#corePriceDisplay_mobile_feature_div',
+        '#corePrice_mobile_feature_div',
+        '#apex_mobile_feature_div',
+        '#corePrice_feature_div',
         '#price_inside_buybox',
         '#newBuyBoxPrice',
         '#priceblock_dealprice',
         '#priceblock_ourprice',
         '#priceblock_saleprice',
-        '.apexPriceToPay .a-offscreen',
-        '.priceToPay .a-offscreen',
-        '#corePrice_feature_div .a-price:not(.a-text-price) .a-offscreen',
-        '#price .a-price:not(.a-text-price) .a-offscreen',
-        '#buybox .a-price:not(.a-text-price) .a-offscreen',
-        '.a-price.a-size-medium.a-color-price .a-offscreen',
-        '.a-price.a-size-large .a-offscreen',
-        '.a-price:not(.a-text-price) .a-offscreen',
-        '.a-color-price',
+        '#buybox',
       ];
 
-      for (const sel of amzPriceSelectors) {
-        const txt = $clean(sel).first().text().trim();
-        if (txt) {
-          const match = txt.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
-          if (match && match[1]) {
-            const parsedVal = parsePriceString(match[1]);
-            if (parsedVal > 0) {
-              scrapedPrice = parsedVal;
-              break;
-            }
-          }
-        }
-      }
+      const amzPriceSelectors = [
+        '.priceToPay .a-offscreen',
+        '.a-price:not(.a-text-price) .a-offscreen',
+        '.apexPriceToPay .a-offscreen',
+        '#price_inside_buybox',
+        '#newBuyBoxPrice',
+        '#priceblock_dealprice',
+        '#priceblock_ourprice',
+        '#priceblock_saleprice',
+      ];
 
-      if (!scrapedPrice || scrapedPrice === 0) {
-        $clean('.a-price:not(.a-text-price)').each((_, el) => {
-          if (scrapedPrice > 0) return;
-          const $el = $clean(el);
-          const off = $el.find('.a-offscreen').first().text().trim();
-          if (off) {
-            const m = off.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
-            if (m && m[1]) {
-              const p = parsePriceString(m[1]);
-              if (p > 0) {
-                scrapedPrice = p;
-                return;
+      for (const containerSel of primaryPriceContainerSelectors) {
+        if (scrapedPrice > 0) break;
+        const $container = $clean(containerSel).first();
+        if ($container.length === 0) continue;
+
+        for (const sel of amzPriceSelectors) {
+          const txt = $container.find(sel).first().text().trim();
+          if (txt) {
+            const match = txt.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
+            if (match && match[1]) {
+              const parsedVal = parsePriceString(match[1]);
+              if (parsedVal > 0) {
+                scrapedPrice = parsedVal;
+                break;
               }
             }
           }
-          const whole = $el.find('.a-price-whole').first().text().trim();
-          const fraction = $el.find('.a-price-fraction').first().text().trim();
+        }
+
+        if (!scrapedPrice || scrapedPrice === 0) {
+          const whole = $container.find('.a-price-whole').first().text().trim();
+          const fraction = $container.find('.a-price-fraction').first().text().trim();
           if (whole) {
             const cleanW = whole.replace(/[^\d]/g, '');
             const cleanF = fraction ? fraction.replace(/[^\d]/g, '') : '00';
@@ -738,10 +730,28 @@ export async function scrapeProductDetails(url: string) {
               const p = parsePriceString(`${cleanW}.${cleanF}`);
               if (p > 0) {
                 scrapedPrice = p;
+                break;
               }
             }
           }
-        });
+        }
+      }
+
+      // Priority 2: Unscoped fallback if primary container was absent or unparseable
+      if (!scrapedPrice || scrapedPrice === 0) {
+        for (const sel of amzPriceSelectors) {
+          const txt = $clean(sel).first().text().trim();
+          if (txt) {
+            const match = txt.match(/(\d[\d\s\.]*[\,\.]\d{2}|\d[\d\s]*)/);
+            if (match && match[1]) {
+              const parsedVal = parsePriceString(match[1]);
+              if (parsedVal > 0) {
+                scrapedPrice = parsedVal;
+                break;
+              }
+            }
+          }
+        }
       }
 
       if (!scrapedPrice || scrapedPrice === 0) {
@@ -1002,9 +1012,10 @@ Page text snippet:
   const finalTrackedUrl = parsedUrl.href;
 
   const needsPriceFallback = !scrapedPrice || scrapedPrice === 0;
+  const isPolishDomain = parsedUrl.hostname.endsWith('.pl') || parsedUrl.hostname.includes('ceneo.') || scrapedCurrency === 'zł' || scrapedCurrency === 'PLN';
 
-  // ONLY attempt searchCeneoFallback if primary site price scraping failed AND genuine access denied / bot block occurred
-  if (needsPriceFallback && (isAllegroUrl || isAmazonUrl || isBotBlocked || !isCeneoUrl)) {
+  // ONLY attempt searchCeneoFallback if primary site price scraping failed AND it is a Polish domain/currency store
+  if (needsPriceFallback && isPolishDomain && (isAllegroUrl || isAmazonUrl || isBotBlocked || !isCeneoUrl)) {
     let ceneoResult = await searchCeneoFallback(scrapedTitle);
 
     if (!ceneoResult || !ceneoResult.price || ceneoResult.price === 0) {
@@ -1036,13 +1047,13 @@ Page text snippet:
 
   let scrapeWarning: string | undefined;
   if (fetchedFromCeneo && !isCeneoUrl) {
-    scrapeWarning = `Nie udało się bezpośrednio odczytać ceny ze strony sklepu. Pobrano szacowaną cenę (${scrapedPrice.toFixed(2)} ${scrapedCurrency || 'zł'}) z Ceneo dla "${scrapedTitle}". Adres strony pozostał oryginalny.`;
+    scrapeWarning = `Could not directly read price from store page. Retrieved estimated price (${scrapedPrice.toFixed(2)} ${scrapedCurrency || 'zł'}) from Ceneo for "${scrapedTitle}". Product URL remains original.`;
   } else if (needsManualPrice) {
     scrapeWarning = isAllegroUrl
-      ? 'Serwis Allegro stosuje ochronę anty-bot, a Ceneo nie zwróciło cen. Wpisz cenę ręcznie.'
+      ? 'Allegro uses anti-bot protection and Ceneo did not return prices. Please enter price manually.'
       : isAmazonUrl
-      ? 'Strona Amazon wymagała weryfikacji anty-bot i Ceneo nie znalazło jednoznacznej ceny. Sprawdź i wpisz cenę ręcznie.'
-      : 'Nie udało się automatycznie odczytać ceny z tej strony. Sprawdź i wpisz cenę ręcznie.';
+      ? 'Amazon page required anti-bot verification. Please check and enter price manually.'
+      : 'Could not automatically read price from this page. Please check and enter price manually.';
   }
 
   return {

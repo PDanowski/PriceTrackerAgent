@@ -94,16 +94,16 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
         <div className="space-y-4">
           {sheetInfo ? (
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">{sheetInfo.name}</h4>
-                  <p className="text-[11px] text-slate-500 font-mono mt-0.5 truncate max-w-xs">ID: {sheetInfo.id}</p>
+              <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-bold text-slate-900 truncate">{sheetInfo.name}</h4>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5 truncate">ID: {sheetInfo.id}</p>
                 </div>
                 <a
                   href={sheetInfo.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors"
+                  className="shrink-0 inline-flex items-center space-x-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors whitespace-nowrap"
                 >
                   <span>Open Sheet</span>
                   <ExternalLink className="w-3.5 h-3.5" />

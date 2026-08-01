@@ -47,8 +47,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       : '0.0';
 
   const formatPrice = (val: number, curr: string) => {
-    const formatted = val.toFixed(2).replace('.', ',');
-    return curr === 'zł' || curr === 'PLN' ? `${formatted} zł` : `${curr}${val.toFixed(2)}`;
+    const formatted = val.toFixed(2);
+    return curr === 'zł' || curr === 'PLN' ? `${formatted} zł` : `${curr}${formatted}`;
   };
 
   useEffect(() => {
@@ -80,10 +80,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   ? `${activeBadge.bgClass} ${activeBadge.textClass} ${activeBadge.borderClass}`
                   : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
               }`}
-              title="Zmień znacznik koloru"
+              title="Change color tag"
             >
               <span className={`w-2 h-2 rounded-full ${activeBadge ? activeBadge.dotClass : 'bg-slate-300'}`} />
-              <span>{activeBadge ? activeBadge.name : 'Brak znacznika'}</span>
+              <span>{activeBadge ? activeBadge.name : 'No tag'}</span>
               <Palette className="w-3 h-3 ml-0.5 opacity-60" />
             </button>
 
@@ -91,7 +91,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {showColorPicker && (
               <div className="absolute left-0 top-full mt-1.5 z-20 w-48 bg-white rounded-xl border border-slate-200 shadow-xl p-2 animate-fadeIn">
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1 mb-1">
-                  Wybierz znacznik koloru
+                  Select color tag
                 </div>
                 <div className="grid grid-cols-1 gap-0.5">
                   <button
@@ -103,7 +103,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   >
                     <div className="flex items-center space-x-2">
                       <span className="w-2.5 h-2.5 rounded-full border border-slate-300 bg-slate-200" />
-                      <span>Brak koloru</span>
+                      <span>No color</span>
                     </div>
                     {!product.colorBadge && <Check className="w-3.5 h-3.5 text-slate-600" />}
                   </button>
@@ -135,7 +135,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {hasPriceDrop && (
               <span className="inline-flex items-center space-x-1 text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
                 <TrendingDown className="w-3 h-3 text-emerald-600" />
-                <span>Spadek ceny (-{priceDiffPercent}%)</span>
+                <span>Price Drop (-{priceDiffPercent}%)</span>
               </span>
             )}
             <span
@@ -146,7 +146,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <span
                 className={`w-1.5 h-1.5 rounded-full ${product.inStock ? 'bg-emerald-500' : 'bg-rose-500'}`}
               />
-              <span>{product.inStock ? 'Dostępny' : 'Niedostępny'}</span>
+              <span>{product.inStock ? 'In Stock' : 'Out of Stock'}</span>
             </span>
           </div>
         </div>
@@ -165,7 +165,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 }}
               />
             ) : (
-              <div className="text-slate-400 text-xs text-center font-medium">Brak zdjęcia</div>
+              <div className="text-slate-400 text-xs text-center font-medium">No Image</div>
             )}
           </div>
 
@@ -204,14 +204,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     setIsEditingPrice(false);
                   }}
                   className="bg-emerald-600 hover:bg-emerald-500 text-white p-1 rounded-lg text-xs font-semibold"
-                  title="Zapisz cenę"
+                  title="Save price"
                 >
                   <Check className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setIsEditingPrice(false)}
                   className="bg-slate-200 hover:bg-slate-300 text-slate-600 p-1 rounded-lg text-xs"
-                  title="Anuluj"
+                  title="Cancel"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -228,7 +228,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     setIsEditingPrice(true);
                   }}
                   className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 rounded transition-colors"
-                  title="Edytuj cenę ręcznie"
+                  title="Edit price manually"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
@@ -259,7 +259,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Lowest Recorded */}
         <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-          <span className="text-slate-500 font-medium">Najniższa w historii:</span>
+          <span className="text-slate-500 font-medium">Lowest recorded:</span>
           <span className="font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg">
             {formatPrice(product.lowestPrice, product.currency)}
           </span>
@@ -269,34 +269,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Footer Controls */}
       <div className="bg-slate-50/80 px-4 py-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
         <span className="text-slate-400 font-mono text-[10px]">
-          Sprawdzono:{' '}
-          {product.lastChecked ? new Date(product.lastChecked).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Nigdy'}
+          Checked:{' '}
+          {product.lastChecked ? new Date(product.lastChecked).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
         </span>
 
         <div className="flex items-center space-x-2">
           <button
             onClick={() => onOpenHistoryChart(product)}
             className="inline-flex items-center space-x-1 text-slate-600 hover:text-emerald-600 font-medium px-2 py-1 rounded hover:bg-slate-200/60 transition-colors cursor-pointer"
-            title="Wykres historii ceny"
+            title="Price history chart"
           >
             <LineChart className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Historia</span>
+            <span className="hidden sm:inline">History</span>
           </button>
 
           <button
             onClick={() => onCheckSinglePrice(product.id)}
             disabled={isChecking}
             className="inline-flex items-center space-x-1 text-slate-700 hover:text-emerald-600 font-medium px-2 py-1 rounded hover:bg-slate-200/60 transition-colors cursor-pointer disabled:opacity-50"
-            title="Sprawdź cenę teraz"
+            title="Check price now"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin text-emerald-600' : ''}`} />
-            <span>Sprawdź</span>
+            <span>Check</span>
           </button>
 
           <button
             onClick={() => onDeleteProduct(product.id)}
             className="text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition-colors cursor-pointer"
-            title="Usuń produkt z listy"
+            title="Delete product"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

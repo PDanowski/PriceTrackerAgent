@@ -24,7 +24,7 @@ export const CheckProgressBar: React.FC<CheckProgressBarProps> = ({ progress, is
           <div className="min-w-0">
             <div className="flex items-center space-x-2">
               <span className="font-semibold text-sm text-slate-100">
-                Sprawdzanie cen w toku...
+                Price check in progress...
               </span>
               <span className="bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold px-2 py-0.5 rounded-md border border-emerald-500/30">
                 {percent}%
@@ -32,7 +32,7 @@ export const CheckProgressBar: React.FC<CheckProgressBarProps> = ({ progress, is
             </div>
             {progress.currentTitle && (
               <p className="text-xs text-slate-400 truncate max-w-lg mt-0.5">
-                Obecnie: <span className="text-emerald-300 font-medium">{progress.currentTitle}</span>
+                Current: <span className="text-emerald-300 font-medium">{progress.currentTitle}</span>
               </p>
             )}
           </div>
@@ -41,7 +41,7 @@ export const CheckProgressBar: React.FC<CheckProgressBarProps> = ({ progress, is
         <div className="flex items-center space-x-2 text-xs font-mono text-emerald-400 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/60 shrink-0 self-start sm:self-auto">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>
-            Sprawdzono <strong className="text-white font-bold">{current}</strong> z <strong className="text-white font-bold">{total}</strong> produktów
+            Checked <strong className="text-white font-bold">{current}</strong> of <strong className="text-white font-bold">{total}</strong> products
           </span>
         </div>
       </div>

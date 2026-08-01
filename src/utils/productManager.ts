@@ -89,16 +89,16 @@ export function loadProductsFromStorage(
 }
 
 export function buildGoogleSheetsRows(products: Product[]): (string | number)[][] {
-  const header = ['Nazwa Produktu', 'Aktualna Cena (PLN)', 'Poprzednia Cena', 'Najniższa Cena', 'Waluta', 'Dostępność', 'Link', 'Ostatnie Sprawdzenie'];
+  const header = ['Product Name', 'Current Price', 'Previous Price', 'Lowest Price', 'Currency', 'Availability', 'URL', 'Last Checked'];
   const rows = products.map((p) => [
     p.title,
     p.currentPrice,
     p.previousPrice !== null ? p.previousPrice : '-',
     p.lowestPrice,
     p.currency,
-    p.inStock ? 'W magazynie' : 'Brak w magazynie',
+    p.inStock ? 'In stock' : 'Out of stock',
     p.url,
-    p.lastChecked ? new Date(p.lastChecked).toLocaleString('pl-PL') : 'Nigdy',
+    p.lastChecked ? new Date(p.lastChecked).toLocaleString('en-US') : 'Never',
   ]);
   return [header, ...rows];
 }

@@ -49,7 +49,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       if (res.ok) {
         const data = await res.json();
         if (data.modifiedTime) {
-          setDriveLastBackupTime(new Date(data.modifiedTime).toLocaleString('pl-PL'));
+          setDriveLastBackupTime(new Date(data.modifiedTime).toLocaleString());
         }
       }
     } catch {
@@ -73,12 +73,12 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
       setStatusMessage({
         type: 'success',
-        text: `Kopia zapasowa (${products.length} produktów) została pobrana na dysk lokalny.`,
+        text: `Backup file (${products.length} products) downloaded to local disk.`,
       });
     } catch {
       setStatusMessage({
         type: 'error',
-        text: 'Błąd podczas tworzenia pliku kopii zapasowej.',
+        text: 'Error creating backup file.',
       });
     }
   };
@@ -98,18 +98,18 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           onRestoreProducts(parsed);
           setStatusMessage({
             type: 'success',
-            text: `Pomyślnie przywrócono ${parsed.length} produktów z pliku JSON!`,
+            text: `Successfully restored ${parsed.length} products from JSON file!`,
           });
         } else {
           setStatusMessage({
             type: 'error',
-            text: 'Nieprawidłowy plik kopii. Plik musi zawierać listę produktów.',
+            text: 'Invalid backup file. The file must contain a list of products.',
           });
         }
       } catch {
         setStatusMessage({
           type: 'error',
-          text: 'Nie udało się odczytać pliku JSON. Upewnij się, że plik jest poprawny.',
+          text: 'Failed to read JSON file. Please ensure the file is valid.',
         });
       }
     };
@@ -130,7 +130,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         } else {
           setStatusMessage({
             type: 'error',
-            text: 'Wymagane zalogowanie przez Google, aby połączyć się z Google Drive.',
+            text: 'Google Sign-In required to connect to Google Drive.',
           });
           setIsDriveSyncing(false);
           return;
@@ -163,21 +163,21 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
       const data = await response.json();
       if (response.ok) {
-        setDriveLastBackupTime(new Date().toLocaleString('pl-PL'));
+        setDriveLastBackupTime(new Date().toLocaleString());
         setStatusMessage({
           type: 'success',
-          text: `Pomyślnie zapisano kopię na Google Drive (${products.length} produktów)!`,
+          text: `Backup saved successfully to Google Drive (${products.length} products)!`,
         });
       } else {
         setStatusMessage({
           type: 'error',
-          text: data.error || 'Nie udało się zapisać kopii na Google Drive.',
+          text: data.error || 'Failed to save backup to Google Drive.',
         });
       }
     } catch (err: any) {
       setStatusMessage({
         type: 'error',
-        text: err.message || 'Błąd połączenia z Google Drive',
+        text: err.message || 'Google Drive connection error',
       });
     } finally {
       setIsDriveSyncing(false);
@@ -197,7 +197,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         } else {
           setStatusMessage({
             type: 'error',
-            text: 'Wymagane zalogowanie przez Google, aby pobrać kopię z Google Drive.',
+            text: 'Google Sign-In required to download backup from Google Drive.',
           });
           setIsDriveSyncing(false);
           return;
@@ -223,18 +223,18 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         onRestoreProducts(data.products);
         setStatusMessage({
           type: 'success',
-          text: `Przywrócono ${data.products.length} produktów z kopii Google Drive!`,
+          text: `Restored ${data.products.length} products from Google Drive backup!`,
         });
       } else {
         setStatusMessage({
           type: 'error',
-          text: data.error || 'Nie znaleziono pliku kopii zapasowej na Google Drive.',
+          text: data.error || 'No backup file found on Google Drive.',
         });
       }
     } catch (err: any) {
       setStatusMessage({
         type: 'error',
-        text: err.message || 'Błąd podczas pobierania kopii z Google Drive',
+        text: err.message || 'Error downloading backup from Google Drive',
       });
     } finally {
       setIsDriveSyncing(false);
@@ -251,19 +251,19 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           onRestoreProducts(parsed);
           setStatusMessage({
             type: 'success',
-            text: `Przywrócono ${parsed.length} produktów z automatycznej kopii zapasowej przeglądarki!`,
+            text: `Restored ${parsed.length} products from browser auto-backup!`,
           });
           return;
         }
       }
       setStatusMessage({
         type: 'error',
-        text: 'Brak zapisanej kopii w pamięci podręcznej przeglądarki.',
+        text: 'No saved backup found in browser cache.',
       });
     } catch {
       setStatusMessage({
         type: 'error',
-        text: 'Wystąpił błąd podczas odczytu automatycznej kopii zapasowej.',
+        text: 'An error occurred while reading the automatic backup.',
       });
     }
   };
@@ -284,15 +284,15 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Kopia Zapasowa i Przywracanie</h2>
-              <p className="text-xs text-slate-500">Automatyczny backup na Google Drive i lokalnie</p>
+              <h2 className="text-base font-bold text-slate-900">Backup & Restore</h2>
+              <p className="text-xs text-slate-500">Automatic backup to Google Drive & local storage</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
-            title="Zamknij (Esc)"
+            title="Close (Esc)"
           >
             <X className="w-5 h-5" />
           </button>
@@ -320,8 +320,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           {/* Current Status */}
           <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-slate-700">Aktualne produkty w aplikacji</p>
-              <p className="text-xs text-slate-500">{products.length} śledzonych pozycji</p>
+              <p className="text-xs font-semibold text-slate-700">Currently Tracked Products</p>
+              <p className="text-xs text-slate-500">{products.length} items</p>
             </div>
             <button
               type="button"
@@ -329,7 +329,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-xs cursor-pointer border border-slate-200"
             >
               <Download className="w-3.5 h-3.5 text-slate-600" />
-              <span>Plik JSON</span>
+              <span>JSON File</span>
             </button>
           </div>
 
@@ -342,12 +342,12 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               </div>
               {driveLastBackupTime && (
                 <span className="text-[10px] text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full font-medium">
-                  Ostatnia: {driveLastBackupTime}
+                  Last: {driveLastBackupTime}
                 </span>
               )}
             </div>
             <p className="text-[11px] text-blue-800/90 leading-relaxed">
-              Aplikacja automatycznie synchronizuje plik <code className="bg-blue-100 px-1 py-0.5 rounded text-blue-900">Price_Tracker_Products_Backup.json</code> w Twoim Google Drive przy każdej zmianie produktów.
+              The application automatically synchronizes <code className="bg-blue-100 px-1 py-0.5 rounded text-blue-900">Price_Tracker_Products_Backup.json</code> to your Google Drive whenever products change.
             </p>
             <div className="flex items-center space-x-2 pt-1 flex-wrap gap-y-2">
               <button
@@ -361,7 +361,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 ) : (
                   <CloudUpload className="w-3.5 h-3.5" />
                 )}
-                <span>Zapisz na Google Drive teraz</span>
+                <span>Save to Google Drive now</span>
               </button>
 
               <button
@@ -371,22 +371,22 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 className="inline-flex items-center space-x-1.5 bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
               >
                 <CloudDownload className="w-3.5 h-3.5" />
-                <span>Pobierz z Google Drive</span>
+                <span>Restore from Google Drive</span>
               </button>
             </div>
           </div>
 
           <div className="border-t border-slate-100 my-1" />
 
-          <p className="text-xs font-semibold text-slate-700">Inne opcje przywracania danych:</p>
+          <p className="text-xs font-semibold text-slate-700">Other restore options:</p>
 
           {/* Import JSON File */}
           <div className="flex items-center justify-between p-2.5 border border-slate-200 rounded-xl hover:border-slate-300 transition-colors">
             <div className="flex items-center space-x-2.5">
               <Upload className="w-4 h-4 text-teal-600 shrink-0" />
               <div>
-                <p className="text-xs font-medium text-slate-800">Wczytaj kopię z pliku JSON</p>
-                <p className="text-[10px] text-slate-500">Zaimportuj uprzednio pobrany plik .json</p>
+                <p className="text-xs font-medium text-slate-800">Load backup from JSON file</p>
+                <p className="text-[10px] text-slate-500">Import previously downloaded .json file</p>
               </div>
             </div>
             <button
@@ -394,7 +394,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               onClick={() => fileInputRef.current?.click()}
               className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0"
             >
-              Wybierz plik
+              Select file
             </button>
             <input
               type="file"
@@ -410,8 +410,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             <div className="flex items-center space-x-2.5">
               <HardDriveDownload className="w-4 h-4 text-emerald-600 shrink-0" />
               <div>
-                <p className="text-xs font-medium text-slate-800">Przywróć z auto-kopii przeglądarki</p>
-                <p className="text-[10px] text-slate-500">Automatyczny punkt przywracania w pamięci podręcznej</p>
+                <p className="text-xs font-medium text-slate-800">Restore from browser auto-backup</p>
+                <p className="text-[10px] text-slate-500">Automatic restore point in browser cache</p>
               </div>
             </div>
             <button
@@ -419,7 +419,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               onClick={handleRestoreFromLocalAutoBackup}
               className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0"
             >
-              Przywróć
+              Restore
             </button>
           </div>
         </div>
@@ -431,7 +431,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             onClick={onClose}
             className="px-5 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            Zamknij
+            Close
           </button>
         </div>
       </div>

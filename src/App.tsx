@@ -135,7 +135,7 @@ export default function App() {
     setProducts(newProducts);
     localStorage.setItem('price_tracker_products', JSON.stringify(newProducts));
     localStorage.setItem('price_tracker_products_backup', JSON.stringify(newProducts));
-    addLog('success', `Przywrócono listę produktów (${newProducts.length} pozycji)`);
+    addLog('success', `Restored product list (${newProducts.length} items)`);
 
     // Immediately push to agent server to prevent background state sync from overwriting restored products
     fetch('/api/agent/config', {
@@ -438,7 +438,7 @@ export default function App() {
   // Run full price check agent loop with progress bar updates
   const runFullAgentCheck = async () => {
     if (isAuthInitializing || !isInitialSyncDone) {
-      addLog('info', 'Trwa inicjalizacja aplikacji i weryfikacja stanu... Proszę spróbować za chwilę.');
+      addLog('info', 'App initializing and verifying state... Please try again in a moment.');
       return;
     }
     if (isAgentRunningRef.current) {
@@ -446,7 +446,7 @@ export default function App() {
       return;
     }
     if (!products || products.length === 0) {
-      addLog('info', 'Brak produktów do sprawdzenia.');
+      addLog('info', 'No products to check.');
       return;
     }
 
@@ -454,7 +454,7 @@ export default function App() {
     setIsAgentRunning(true);
     const totalCount = products.length;
     setCheckProgress({ current: 0, total: totalCount, currentTitle: products[0]?.title });
-    addLog('info', `Rozpoczynanie równoległego sprawdzania cen (4 procesy) dla ${totalCount} produktów z listy...`);
+    addLog('info', `Starting parallel price check (4 processes) for ${totalCount} product(s)...`);
 
     let priceDropsDetected: Array<{ title: string; oldPrice: number; newPrice: number; currency: string; url: string }> = [];
     const updatedProducts = [...products];
@@ -473,7 +473,7 @@ export default function App() {
         const targetUrl = prod.url && prod.url.startsWith('http') ? prod.url : `https://${prod.url || ''}`;
 
         try {
-          addLog('info', `Sprawdzanie ceny [${i + 1}/${totalCount}]: "${prod.title}"...`);
+          addLog('info', `Checking price [${i + 1}/${totalCount}]: "${prod.title}"...`);
 
           let response: Response | null = null;
           let errorMessage = '';
@@ -497,13 +497,13 @@ export default function App() {
               } else {
                 try {
                   const errJson = await res.json();
-                  errorMessage = errJson.error || `Błąd serwera (HTTP ${res.status})`;
+                  errorMessage = errJson.error || `Server error (HTTP ${res.status})`;
                 } catch {
-                  errorMessage = `Błąd serwera (HTTP ${res.status})`;
+                  errorMessage = `Server error (HTTP ${res.status})`;
                 }
               }
             } catch (fetchErr: any) {
-              errorMessage = fetchErr.message || 'Błąd połączenia z serwerem';
+              errorMessage = fetchErr.message || 'Server connection error';
               if (retry === 1) throw fetchErr;
             } finally {
               clearTimeout(timeoutId);
@@ -537,19 +537,19 @@ export default function App() {
               });
               addLog(
                 'success',
-                `🔔 OBNIŻKA CENY o ${dropPercent.toFixed(1)}% dla "${prod.title}"!`,
-                `Poprzednia (z wczoraj): ${prod.currency}${basePreviousPrice.toFixed(2)} ➔ Nowa: ${prod.currency}${newPrice.toFixed(2)}`
+                `🔔 PRICE DROP by ${dropPercent.toFixed(1)}% for "${prod.title}"!`,
+                `Previous (yesterday): ${prod.currency}${basePreviousPrice.toFixed(2)} ➔ New: ${prod.currency}${newPrice.toFixed(2)}`
               );
             } else if (isDrop && basePreviousPrice !== null) {
               addLog(
                 'info',
-                `Zaktualizowano cenę dla "${prod.title}" (-${dropPercent.toFixed(1)}%)`,
-                `Cena spadła z ${prod.currency}${basePreviousPrice.toFixed(2)} na ${prod.currency}${newPrice.toFixed(2)}.`
+                `Updated price for "${prod.title}" (-${dropPercent.toFixed(1)}%)`,
+                `Price dropped from ${prod.currency}${basePreviousPrice.toFixed(2)} to ${prod.currency}${newPrice.toFixed(2)}.`
               );
             } else {
               addLog(
                 'info',
-                `Zarejestrowano cenę dla "${prod.title}": ${prod.currency}${newPrice.toFixed(2)}`
+                `Recorded price for "${prod.title}": ${prod.currency}${newPrice.toFixed(2)}`
               );
             }
 
@@ -570,13 +570,13 @@ export default function App() {
             // Live UI state update after each product finishes
             setProducts([...updatedProducts]);
           } else {
-            addLog('warning', `Nie udało się pobrać ceny dla "${prod.title}" (${errorMessage || 'Nieznany błąd'}). Zachowano dotychczasową cenę.`);
+            addLog('warning', `Failed to fetch price for "${prod.title}" (${errorMessage || 'Unknown error'}). Kept existing price.`);
           }
         } catch (err: any) {
           if (err.name === 'AbortError') {
-            addLog('warning', `Przekroczono czas oczekiwania (15s) dla "${prod.title}". Pomijanie...`);
+            addLog('warning', `Request timed out (15s) for "${prod.title}". Skipping...`);
           } else {
-            addLog('error', `Błąd podczas sprawdzania ${prod.title}: ${err.message}`);
+            addLog('error', `Error while checking ${prod.title}: ${err.message}`);
           }
         } finally {
           completedCount++;
@@ -594,7 +594,7 @@ export default function App() {
       await Promise.all(Array.from({ length: activeWorkerCount }, () => worker()));
       setCheckingProductId(null);
 
-      addLog('success', `Zakończono sprawdzanie cen dla wszystkich ${totalCount} produktów.`);
+      addLog('success', `Completed price check for all ${totalCount} product(s).`);
 
       // Sync updated products to server background agent
       fetch('/api/agent/config', {
@@ -622,7 +622,7 @@ export default function App() {
           await dispatchPriceDropEmail(recipient, priceDropsDetected, currentToken);
         }
       } else if (priceDropsDetected.length === 0) {
-        addLog('info', 'Powiadomienie Gmail:', `Żaden produkt nie spadł o co najmniej 5% ceny. Brak wiadomości email.`);
+        addLog('info', 'Gmail notification:', `No product dropped by 5% or more. No email sent.`);
       }
     } finally {
       isAgentRunningRef.current = false;
@@ -706,7 +706,7 @@ export default function App() {
       return p;
     });
     setProducts(updated);
-    addLog('info', `Ręcznie zaktualizowano cenę produktu do ${newPrice.toFixed(2)} PLN`);
+    addLog('info', `Manually updated product price to ${newPrice.toFixed(2)} ${products.find(p => p.id === id)?.currency || 'PLN'}`);
 
     const currentToken = token || (await getAccessToken());
     if (sheetInfo && sheetInfo.autoSync && currentToken) {
@@ -861,7 +861,7 @@ export default function App() {
         },
         body: JSON.stringify({
           recipientEmail,
-          subject: `🔔 Powiadomienie o obniżce ceny: ${drops.length} produkt(ów) z niższą ceną!`,
+          subject: `🔔 Price Drop Notification: ${drops.length} product(s) with price drops!`,
           htmlBody,
         }),
       });
@@ -949,7 +949,7 @@ export default function App() {
     const updated = products.filter((p) => p.id !== id);
     setProducts(updated);
     if (target) {
-      addLog('info', `Usunięto produkt z listy: "${target.title}"`);
+      addLog('info', `Removed product from list: "${target.title}"`);
     }
 
     const currentToken = token || (await getAccessToken());
@@ -1118,13 +1118,13 @@ export default function App() {
                 onClick={() => setIsAddModalOpen(true)}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm cursor-pointer"
               >
-                Dodaj produkt
+                Add Product
               </button>
               <button
                 onClick={() => setIsBackupModalOpen(true)}
                 className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
               >
-                Przywróć z kopii zapasowej
+                Restore from Backup
               </button>
             </div>
           </div>

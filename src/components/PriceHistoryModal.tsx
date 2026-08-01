@@ -29,8 +29,8 @@ export const PriceHistoryModal: React.FC<PriceHistoryModalProps> = ({ product, o
   const maxPrice = Math.max(...prices, product.currentPrice);
 
   const formatPrice = (val: number, curr: string) => {
-    const formatted = val.toFixed(2).replace('.', ',');
-    return curr === 'zł' || curr === 'PLN' ? `${formatted} zł` : `${curr}${val.toFixed(2)}`;
+    const formatted = val.toFixed(2);
+    return curr === 'zł' || curr === 'PLN' ? `${formatted} zł` : `${curr}${formatted}`;
   };
 
   return (
@@ -49,7 +49,7 @@ export const PriceHistoryModal: React.FC<PriceHistoryModalProps> = ({ product, o
             )}
             <div>
               <h3 className="text-base font-bold text-slate-900 line-clamp-1">{product.title}</h3>
-              <p className="text-xs text-slate-500">Historia i trendy zmian ceny</p>
+              <p className="text-xs text-slate-500">Price history and trends</p>
             </div>
           </div>
           <button
@@ -64,14 +64,14 @@ export const PriceHistoryModal: React.FC<PriceHistoryModalProps> = ({ product, o
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-              <span className="text-[11px] font-medium text-slate-400 block mb-1">Aktualna cena</span>
+              <span className="text-[11px] font-medium text-slate-400 block mb-1">Current Price</span>
               <span className="text-xl font-black text-slate-900">
                 {formatPrice(product.currentPrice, product.currency)}
               </span>
             </div>
 
             <div className="bg-emerald-50 p-3.5 rounded-xl border border-emerald-100">
-              <span className="text-[11px] font-medium text-emerald-700 block mb-1">Najniższa w historii</span>
+              <span className="text-[11px] font-medium text-emerald-700 block mb-1">Lowest Recorded</span>
               <span className="text-xl font-black text-emerald-900">
                 {formatPrice(minPrice, product.currency)}
               </span>
@@ -87,10 +87,10 @@ export const PriceHistoryModal: React.FC<PriceHistoryModalProps> = ({ product, o
                 <YAxis
                   domain={['auto', 'auto']}
                   tick={{ fontSize: 11, fill: '#64748b' }}
-                  tickFormatter={(val) => `${val} zł`}
+                  tickFormatter={(val) => `${val}`}
                 />
                 <Tooltip
-                  formatter={(value: any) => [formatPrice(Number(value), product.currency), 'Cena']}
+                  formatter={(value: any) => [formatPrice(Number(value), product.currency), 'Price']}
                   contentStyle={{ backgroundColor: '#0f172a', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
                 />
                 <Line
@@ -108,12 +108,12 @@ export const PriceHistoryModal: React.FC<PriceHistoryModalProps> = ({ product, o
 
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
-          <span>Zarejestrowano {product.priceHistory.length} dziennych minimów cenowych</span>
+          <span>Recorded {product.priceHistory.length} daily price data points</span>
           <button
             onClick={onClose}
             className="px-4 py-1.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            Zamknij
+            Close
           </button>
         </div>
       </div>

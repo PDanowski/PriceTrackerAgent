@@ -64,14 +64,14 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
             )}
             <span>
               {isInitializing
-                ? 'Inicjalizacja...'
+                ? 'Initializing...'
                 : isRunning
                 ? checkProgress
-                  ? `Sprawdzanie (${checkProgress.current}/${checkProgress.total} - ${Math.round((Math.min(checkProgress.current, checkProgress.total) / (checkProgress.total || 1)) * 100)}%)`
-                  : 'Uruchamianie sprawdzania...'
+                  ? `Checking (${checkProgress.current}/${checkProgress.total} - ${Math.round((Math.min(checkProgress.current, checkProgress.total) / (checkProgress.total || 1)) * 100)}%)`
+                  : 'Starting price check...'
                 : !hasProducts
-                ? 'Brak produktów do sprawdzenia'
-                : 'Uruchom sprawdzanie cen'}
+                ? 'No products to check'
+                : 'Run Price Check'}
             </span>
           </button>
 
@@ -80,42 +80,42 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
             className="inline-flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer text-sm"
           >
             <Plus className="w-4 h-4" />
-            <span>Dodaj link do produktu</span>
+            <span>Add Product Link</span>
           </button>
 
           <button
             onClick={onOpenBackupModal}
             className="inline-flex items-center space-x-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-medium px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-sm"
-            title="Kopia zapasowa i przywracanie produktów"
+            title="Backup and restore products"
           >
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Kopia i Przywracanie</span>
+            <span>Backup & Restore</span>
           </button>
 
           {/* Schedule selector */}
           <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs text-slate-700">
             <Clock className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="font-medium text-slate-500">Harmonogram:</span>
+            <span className="font-medium text-slate-500">Schedule:</span>
             <select
               value={scheduleInterval}
               onChange={(e) => onScheduleChange(e.target.value)}
               className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
             >
-              <option value="3hr">Co 3 godziny (Domyślnie)</option>
-              <option value="1hr">Co 1 godzinę</option>
-              <option value="6hr">Co 6 godzin</option>
-              <option value="12hr">Co 12 godzin</option>
-              <option value="24hr">Co 24 godziny</option>
-              <option value="15min">Co 15 minut (Demo)</option>
-              <option value="daily_noon_cet">Codziennie o 12:00 (CET)</option>
-              <option value="manual">Tylko ręczne uruchamianie</option>
+              <option value="3hr">Every 3 hours (Default)</option>
+              <option value="1hr">Every 1 hour</option>
+              <option value="6hr">Every 6 hours</option>
+              <option value="12hr">Every 12 hours</option>
+              <option value="24hr">Every 24 hours</option>
+              <option value="15min">Every 15 minutes (Demo)</option>
+              <option value="daily_noon_cet">Daily at 12:00 PM (CET)</option>
+              <option value="manual">Manual run only</option>
             </select>
           </div>
 
           {scheduleInterval !== 'manual' && (
             <div className="text-xs text-slate-600 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1.5 rounded-xl font-mono flex items-center space-x-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Następne sprawdzenie za: <strong className="text-emerald-900">{formatTime(nextRunSeconds)}</strong></span>
+              <span>Next run in: <strong className="text-emerald-900">{formatTime(nextRunSeconds)}</strong></span>
             </div>
           )}
         </div>
@@ -126,7 +126,7 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Szukaj produktów..."
+              placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
@@ -139,11 +139,11 @@ export const AgentControlPanel: React.FC<AgentControlPanelProps> = ({
               onChange={(e) => onColorBadgeChange(e.target.value)}
               className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
             >
-              <option value="all">Wszystkie kolory</option>
-              <option value="none">Bez znacznika</option>
+              <option value="all">All colors</option>
+              <option value="none">No tag</option>
               {COLOR_BADGES.map((badge) => (
                 <option key={badge.id} value={badge.id}>
-                  Kolor: {badge.name}
+                  Tag: {badge.name}
                 </option>
               ))}
             </select>

@@ -21,14 +21,14 @@ export interface ColorBadgeConfig {
 }
 
 export const COLOR_BADGES: ColorBadgeConfig[] = [
-  { id: 'blue', name: 'Niebieski', bgClass: 'bg-blue-50', textClass: 'text-blue-700', borderClass: 'border-blue-200', dotClass: 'bg-blue-500' },
-  { id: 'emerald', name: 'Zielony', bgClass: 'bg-emerald-50', textClass: 'text-emerald-700', borderClass: 'border-emerald-200', dotClass: 'bg-emerald-500' },
-  { id: 'purple', name: 'Fioletowy', bgClass: 'bg-purple-50', textClass: 'text-purple-700', borderClass: 'border-purple-200', dotClass: 'bg-purple-500' },
-  { id: 'amber', name: 'Bursztynowy', bgClass: 'bg-amber-50', textClass: 'text-amber-700', borderClass: 'border-amber-200', dotClass: 'bg-amber-500' },
-  { id: 'rose', name: 'Różowy', bgClass: 'bg-rose-50', textClass: 'text-rose-700', borderClass: 'border-rose-200', dotClass: 'bg-rose-500' },
-  { id: 'indigo', name: 'Indygo', bgClass: 'bg-indigo-50', textClass: 'text-indigo-700', borderClass: 'border-indigo-200', dotClass: 'bg-indigo-500' },
-  { id: 'cyan', name: 'Cyjan', bgClass: 'bg-cyan-50', textClass: 'text-cyan-700', borderClass: 'border-cyan-200', dotClass: 'bg-cyan-500' },
-  { id: 'slate', name: 'Szary', bgClass: 'bg-slate-100', textClass: 'text-slate-700', borderClass: 'border-slate-200', dotClass: 'bg-slate-500' },
+  { id: 'blue', name: 'Blue', bgClass: 'bg-blue-50', textClass: 'text-blue-700', borderClass: 'border-blue-200', dotClass: 'bg-blue-500' },
+  { id: 'emerald', name: 'Green', bgClass: 'bg-emerald-50', textClass: 'text-emerald-700', borderClass: 'border-emerald-200', dotClass: 'bg-emerald-500' },
+  { id: 'purple', name: 'Purple', bgClass: 'bg-purple-50', textClass: 'text-purple-700', borderClass: 'border-purple-200', dotClass: 'bg-purple-500' },
+  { id: 'amber', name: 'Amber', bgClass: 'bg-amber-50', textClass: 'text-amber-700', borderClass: 'border-amber-200', dotClass: 'bg-amber-500' },
+  { id: 'rose', name: 'Rose', bgClass: 'bg-rose-50', textClass: 'text-rose-700', borderClass: 'border-rose-200', dotClass: 'bg-rose-500' },
+  { id: 'indigo', name: 'Indigo', bgClass: 'bg-indigo-50', textClass: 'text-indigo-700', borderClass: 'border-indigo-200', dotClass: 'bg-indigo-500' },
+  { id: 'cyan', name: 'Cyan', bgClass: 'bg-cyan-50', textClass: 'text-cyan-700', borderClass: 'border-cyan-200', dotClass: 'bg-cyan-500' },
+  { id: 'slate', name: 'Slate', bgClass: 'bg-slate-100', textClass: 'text-slate-700', borderClass: 'border-slate-200', dotClass: 'bg-slate-500' },
 ];
 
 export interface Product {
