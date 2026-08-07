@@ -38,14 +38,19 @@ export interface Product {
   currentPrice: number;
   previousPrice: number | null;
   lowestPrice: number;
+  highestPrice?: number;
   currency: string;
   imageUrl?: string;
   inStock: boolean;
+  category?: string;
+  targetPrice?: number;
   lastChecked: string | null;
   priceHistory: PriceHistoryPoint[];
   colorBadge?: ColorBadgeOption;
   status: 'active' | 'checking' | 'error' | 'alert';
   lastError?: string;
+  scrapeWarning?: string;
+  needsManualPrice?: boolean;
 }
 
 export interface GoogleSheetInfo {
@@ -61,6 +66,7 @@ export interface EmailSettings {
   enabled: boolean;
   recipientEmail: string;
   alertOnPriceDrop: boolean;
+  alertOnlyOnTargetHit?: boolean;
   minDropPercent: number; // e.g. 5 for 5% drop rule
   lastEmailSent: string | null;
 }

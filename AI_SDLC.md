@@ -6,12 +6,19 @@ This document outlines the software engineering principles, AI integration patte
 
 ## 📐 Core Engineering & Architecture Rules
 
-### 1. **Modular Architecture & File Size Limits**
+### 1. **Modular Architecture & File Size Limits (SOLID Principles)**
 - **500-Line Limit**: No source file should exceed 500 lines of code. Large components or utilities are decomposed into distinct, cohesive modules.
+- **SOLID Principles**:
+  - **Single Responsibility (SRP)**: Each component, custom hook, service, and module has a focused domain (e.g., UI rendering, storage management, scraping strategies).
+  - **Open/Closed (OCP)**: E-commerce store scraping strategies extend a base strategy pattern without modifying core engine logic.
+  - **Liskov Substitution (LSP)**: Interface implementations (e.g., store scrapers, notification dispatchers) are fully interchangeable.
+  - **Interface Segregation (ISP)**: Data contracts in `src/types.ts` are granular and decoupled.
+  - **Dependency Inversion (DIP)**: React UI components rely on custom hooks and service abstractions rather than direct fetch implementations.
 - **Clean Isolation**:
   - `src/components/`: Modular UI presentation components.
+  - `src/hooks/`: Custom React hooks encapsulating product state, local storage, agent loops, and export/import logic.
   - `src/utils/`: Pure helper functions, formatting tools, and CSV/JSON handlers.
-  - `server/`: Express API server routines, scraper engines (`scraper.ts`), and agent task automation (`agentTask.ts`).
+  - `server/`: Express API server routines, scraper engines (`server/scraper/`), and agent task automation (`server/agentTask.ts`).
   - `src/types.ts`: Global TypeScript interfaces and data models.
 
 ### 2. **Security & Credentials Management**

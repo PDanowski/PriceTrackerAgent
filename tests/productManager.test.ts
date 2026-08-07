@@ -130,12 +130,12 @@ describe('Product Manager Suite', () => {
     const sheetRows = buildGoogleSheetsRows(initialProducts);
 
     expect(sheetRows.length).toBe(2); // 1 header + 1 product row
-    expect(sheetRows[0][0]).toBe('Nazwa Produktu');
+    expect(sheetRows[0][0]).toBe('Product Name');
     expect(sheetRows[1][0]).toBe('Sony WH-1000XM5 Słuchawki Bezprzewodowe');
     expect(sheetRows[1][1]).toBe(1499);
     expect(sheetRows[1][2]).toBe(1599);
     expect(sheetRows[1][3]).toBe(1399);
     expect(sheetRows[1][4]).toBe('zł');
-    expect(sheetRows[1][5]).toBe('W magazynie');
+    expect(sheetRows[1][5]).toBe('In stock');
   });
 });
