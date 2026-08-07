@@ -34,7 +34,11 @@ export function updateProductPrice(
   return products.map((p) => {
     if (p.id !== id) return p;
 
-    const newPrice = scrapedData.price > 0 ? scrapedData.price : p.currentPrice;
+    if (!scrapedData.price || scrapedData.price <= 0) {
+      return p;
+    }
+
+    const newPrice = scrapedData.price;
     const newHistory = recordDailyLowestPrice(p.priceHistory || [], newPrice);
     const prevDayPrice = getPreviousDayPrice(newHistory) ?? p.previousPrice;
     const validTitle =

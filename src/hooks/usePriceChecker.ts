@@ -166,7 +166,6 @@ export function usePriceChecker(
             } else {
               updatedProducts[i] = {
                 ...prod,
-                lastChecked: new Date().toISOString(),
                 scrapeWarning: data.scrapeWarning || 'Unable to fetch current price',
                 status: 'error',
               };
@@ -175,7 +174,6 @@ export function usePriceChecker(
           } else {
             updatedProducts[i] = {
               ...prod,
-              lastChecked: new Date().toISOString(),
               scrapeWarning: 'Failed HTTP fetch',
               status: 'error',
             };
@@ -184,7 +182,6 @@ export function usePriceChecker(
         } catch (err: any) {
           updatedProducts[i] = {
             ...prod,
-            lastChecked: new Date().toISOString(),
             scrapeWarning: err.message,
             status: 'error',
           };

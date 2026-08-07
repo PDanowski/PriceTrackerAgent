@@ -96,6 +96,23 @@ describe('Product Manager Suite', () => {
     expect(updatedProduct.status).toBe('alert');
   });
 
+  it('does not update lastChecked or price if checking price was unsuccessful (e.g. price <= 0)', () => {
+    const productsWithLastChecked: Product[] = [
+      {
+        ...initialProducts[0],
+        lastChecked: '2026-08-01T10:00:00.000Z',
+      },
+    ];
+
+    const result = updateProductPrice(productsWithLastChecked, 'prod-1', {
+      price: 0,
+      title: 'Failed fetch',
+    });
+
+    expect(result[0].lastChecked).toBe('2026-08-01T10:00:00.000Z');
+    expect(result[0].currentPrice).toBe(1499);
+  });
+
   it('ensures product list stays untouched after app restart (Storage Persistence)', () => {
     const customList: Product[] = [
       ...initialProducts,

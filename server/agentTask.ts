@@ -94,7 +94,6 @@ export async function runServerAgentCheck(): Promise<AgentServerState> {
         } else {
           updatedProductsMap.set(idx, {
             ...product,
-            lastChecked: new Date().toISOString(),
             scrapeWarning: scraped.scrapeWarning || 'Failed to read price',
           });
           addServerLog('warning', `Price check for "${product.title}" returned no price or needs manual entry.`);
