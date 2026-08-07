@@ -92,6 +92,16 @@ npm test
 
 ---
 
+## 🤖 AI SDLC & Project Guidelines
+
+This repository follows standard AI SDLC guidelines documented in [`AGENTS.md`](./AGENTS.md) and [`AI_SDLC.md`](./AI_SDLC.md):
+- **Continuous Quality Verification**: Automated linting (`npm run lint`), build validation (`npm run build`), and vitest testing (`npm test`).
+- **500-Line Code Discipline**: Files are kept modular and under 500 lines of code.
+- **Credential Security**: Zero hardcoded credentials or API keys committed to repository.
+- **State Synchronization**: Isolated background agent state management and deterministic job progress tracking.
+
+---
+
 ## 📄 License
 
 MIT License. Designed and built with Google AI Studio.

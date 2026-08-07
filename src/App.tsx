@@ -233,18 +233,21 @@ export default function App() {
 
   // Sync state with server
   const syncWithServer = async () => {
+    if (isAgentRunningRef.current) return;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
       const res = await fetch('/api/agent/state', { signal: controller.signal });
       clearTimeout(timeoutId);
       if (res.ok) {
+        if (isAgentRunningRef.current) return;
         const serverState = await res.json();
-        if (typeof serverState.isRunning === 'boolean') {
+        if (isAgentRunningRef.current) return;
+        if (typeof serverState.isRunning === 'boolean' && !isAgentRunningRef.current) {
           setIsAgentRunning(serverState.isRunning);
           isAgentRunningRef.current = serverState.isRunning;
         }
-        if (serverState.products && serverState.products.length > 0) {
+        if (serverState.products && serverState.products.length > 0 && !isAgentRunningRef.current) {
           setProducts(serverState.products);
         }
         if (serverState.logs && serverState.logs.length > 0) {
@@ -453,7 +456,7 @@ export default function App() {
     isAgentRunningRef.current = true;
     setIsAgentRunning(true);
     const totalCount = products.length;
-    setCheckProgress({ current: 0, total: totalCount, currentTitle: products[0]?.title });
+    setCheckProgress({ current: 0, total: totalCount });
     addLog('info', `Starting parallel price check (4 processes) for ${totalCount} product(s)...`);
 
     let priceDropsDetected: Array<{ title: string; oldPrice: number; newPrice: number; currency: string; url: string }> = [];
@@ -468,7 +471,6 @@ export default function App() {
         const i = nextProductIndex++;
         const prod = updatedProducts[i];
         if (!prod) continue;
-        setCheckingProductId(prod.id);
 
         const targetUrl = prod.url && prod.url.startsWith('http') ? prod.url : `https://${prod.url || ''}`;
 
@@ -583,7 +585,6 @@ export default function App() {
           setCheckProgress({
             current: completedCount,
             total: totalCount,
-            currentTitle: prod.title,
           });
         }
       }

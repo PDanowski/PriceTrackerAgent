@@ -30,11 +30,6 @@ export const CheckProgressBar: React.FC<CheckProgressBarProps> = ({ progress, is
                 {percent}%
               </span>
             </div>
-            {progress.currentTitle && (
-              <p className="text-xs text-slate-400 truncate max-w-lg mt-0.5">
-                Current: <span className="text-emerald-300 font-medium">{progress.currentTitle}</span>
-              </p>
-            )}
           </div>
         </div>
 
